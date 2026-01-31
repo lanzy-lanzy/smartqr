@@ -781,6 +781,58 @@ def issue_item(request):
     instance_id = request.POST.get('instance_id')
     
     supply_request = get_object_or_404(SupplyRequest, pk=request_id, status=SupplyRequest.Status.APPROVED)
+    
+    # Handle Consumables
+    if supply_request.supply.is_consumable:
+        supply = supply_request.supply
+        if supply.quantity < supply_request.quantity:
+            return JsonResponse({'success': False, 'error': f'Insufficient quantity for {supply.name}'}, status=400)
+        
+        previous_qty = supply.quantity
+        supply.quantity -= supply_request.quantity
+        supply.save()
+
+        # Update request status
+        supply_request.status = SupplyRequest.Status.ISSUED
+        supply_request.issued_by = request.user
+        supply_request.issued_at = timezone.now()
+        supply_request.save()
+
+        # Log transaction
+        InventoryTransaction.objects.create(
+            supply=supply,
+            transaction_type=InventoryTransaction.TransactionType.OUT,
+            quantity=-supply_request.quantity,
+            previous_quantity=previous_qty,
+            new_quantity=supply.quantity,
+            reference_code=supply_request.request_code,
+            supply_request=supply_request,
+            performed_by=request.user,
+        )
+
+        # Log scan (if request QR was scanned)
+        QRScanLog.objects.create(
+            scanned_by=request.user,
+            qr_data=supply_request.qr_data,
+            scan_type=QRScanLog.ScanType.ISSUE,
+            supply_request=supply_request,
+            was_successful=True,
+        )
+
+        # If HTMX/Unpoly, redirect
+        if request.headers.get('HX-Request') or request.headers.get('X-Up-Target'):
+            target_url = reverse('batch_request_detail', args=[supply_request.batch_group_id]) if supply_request.batch_group_id else reverse('request_detail', args=[supply_request.id])
+            response = HttpResponse('')
+            response['HX-Redirect'] = target_url
+            response['X-Up-Location'] = target_url
+            return response
+
+        return JsonResponse({
+            'success': True,
+            'message': f'Issued {supply_request.quantity} {supply.name}(s) to {supply_request.requester.get_full_name()}'
+        })
+
+    # Handle Equipment (Existing Logic)
     instance = get_object_or_404(EquipmentInstance, pk=instance_id, status=EquipmentInstance.Status.AVAILABLE)
     
     # Create borrowed item

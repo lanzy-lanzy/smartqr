@@ -124,11 +124,48 @@
 
 /* Select dropdown styling */
 .select {
-    background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%2394a3b8' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e");
-    background-position: right 0.5rem center;
+    background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%23ffffff' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e");
+    background-position: right 0.75rem center;
     background-repeat: no-repeat;
-    background-size: 1.5em 1.5em;
+    background-size: 1.25em 1.25em;
+    background-color: rgba(255, 255, 255, 0.05) !important;
     padding-right: 2.5rem;
+    color: #ffffff !important;
+    color-scheme: dark !important;
+}
+
+.select:hover {
+    background-color: rgba(255, 255, 255, 0.1) !important;
+    @apply border-white/20;
+}
+
+.select:focus {
+    background-color: rgba(255, 255, 255, 0.1) !important;
+    @apply outline-none border-primary-500/50 ring-2 ring-primary-500/20;
+}
+
+/* Style option elements */
+.select option {
+    background: #1e293b !important;
+    background-color: #1e293b !important;
+    color: #ffffff !important;
+    padding: 0.5rem !important;
+}
+
+.select option:checked {
+    background: #22c55e !important;
+    background-color: #22c55e !important;
+    color: #ffffff !important;
+}
+
+/* Fallback for browsers that don't support option styling */
+select {
+    accent-color: #22c55e;
+}
+
+/* Dark mode dropdown for all select elements */
+html.dark select {
+    color-scheme: dark;
 }
 
 .label {

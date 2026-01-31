@@ -371,25 +371,37 @@
                     </div>
 
                     <!-- Instance Selection -->
-                    <div>
-                        <label class="block text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-3">Select Specific Unit</label>
-                        <div class="space-y-2 max-h-48 overflow-y-auto custom-scrollbar pr-2" x-init="fetchInstances()">
-                            <template x-for="instance in availableInstances" :key="instance.id">
-                                <button @click="selectedInstanceId = instance.id"
-                                        class="w-full flex items-center justify-between p-4 rounded-xl border transition-all duration-200"
-                                        :class="selectedInstanceId === instance.id ? 'bg-green-500/10 border-green-500/50 text-white' : 'bg-white/5 border-white/5 text-slate-400 hover:bg-white/10 hover:border-white/10'">
-                                    <div class="flex items-center gap-3">
-                                        <i data-lucide="monitor" class="w-4 h-4"></i>
-                                        <span class="font-mono text-sm" x-text="instance.code"></span>
-                                    </div>
-                                    <div class="w-5 h-5 rounded-full border-2 flex items-center justify-center transition-all"
-                                         :class="selectedInstanceId === instance.id ? 'border-green-500 bg-green-500' : 'border-white/10'">
-                                        <i data-lucide="check" class="w-3 h-3 text-white" x-show="selectedInstanceId === instance.id"></i>
-                                    </div>
-                                </button>
-                            </template>
+                    <template x-if="issueData && !issueData.is_consumable">
+                        <div>
+                            <label class="block text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-3">Select Specific Unit</label>
+                            <div class="space-y-2 max-h-48 overflow-y-auto custom-scrollbar pr-2" x-init="fetchInstances()">
+                                <template x-for="instance in availableInstances" :key="instance.id">
+                                    <button @click="selectedInstanceId = instance.id"
+                                            class="w-full flex items-center justify-between p-4 rounded-xl border transition-all duration-200"
+                                            :class="selectedInstanceId === instance.id ? 'bg-green-500/10 border-green-500/50 text-white' : 'bg-white/5 border-white/5 text-slate-400 hover:bg-white/10 hover:border-white/10'">
+                                        <div class="flex items-center gap-3">
+                                            <i data-lucide="monitor" class="w-4 h-4"></i>
+                                            <span class="font-mono text-sm" x-text="instance.code"></span>
+                                        </div>
+                                        <div class="w-5 h-5 rounded-full border-2 flex items-center justify-center transition-all"
+                                             :class="selectedInstanceId === instance.id ? 'border-green-500 bg-green-500' : 'border-white/10'">
+                                            <i data-lucide="check" class="w-3 h-3 text-white" x-show="selectedInstanceId === instance.id"></i>
+                                        </div>
+                                    </button>
+                                </template>
+                            </div>
                         </div>
-                    </div>
+                    </template>
+
+                    <template x-if="issueData && issueData.is_consumable">
+                        <div class="p-4 bg-amber-500/10 border border-amber-500/20 rounded-2xl flex items-start gap-3">
+                            <i data-lucide="info" class="w-5 h-5 text-amber-500 flex-shrink-0 mt-0.5"></i>
+                            <div>
+                                <p class="text-xs font-bold text-amber-500 uppercase tracking-widest mb-1">Stock Item</p>
+                                <p class="text-[10px] text-slate-400">This is a consumable item. No specific unit selection is required. Issuing this will deduct from the available stock.</p>
+                            </div>
+                        </div>
+                    </template>
                 </div>
                 
                 <div class="p-8 pt-0 flex gap-4">
@@ -397,7 +409,7 @@
                         Cancel
                     </button>
                     <button @click="submitIssue" 
-                            :disabled="!selectedInstanceId"
+                            :disabled="issueData && !issueData.is_consumable && !selectedInstanceId"
                             class="flex-2 px-8 py-3.5 bg-gradient-to-r from-green-600 to-green-500 hover:from-green-500 hover:to-green-400 text-white rounded-xl font-bold transition-all duration-300 shadow-lg shadow-green-500/20 hover:-translate-y-1 disabled:opacity-50 disabled:cursor-not-allowed">
                         Finalize Issuance
                     </button>
