@@ -1,0 +1,64 @@
+{% comment %}
+Request Card Component
+Usage: {% include 'components/request_card.html' with request=request_object %}
+{% endcomment %}
+
+<div class="glass-card">
+    <div class="flex items-start justify-between gap-4">
+        <div class="flex-1 min-w-0">
+            <!-- Header -->
+            <div class="flex items-center gap-3 mb-3">
+                <span class="font-mono text-sm text-surface-400">{{ request.request_code }}</span>
+                
+                {% if request.status == 'pending' %}
+                <span class="badge-warning">Pending</span>
+                {% elif request.status == 'approved' %}
+                <span class="badge-info">Approved</span>
+                {% elif request.status == 'rejected' %}
+                <span class="badge-danger">Rejected</span>
+                {% elif request.status == 'issued' %}
+                <span class="badge-success">Issued</span>
+                {% elif request.status == 'returned' %}
+                <span class="badge-neutral">Returned</span>
+                {% endif %}
+                
+                {% if request.priority == 'urgent' %}
+                <span class="badge-danger badge-pulse">Urgent</span>
+                {% elif request.priority == 'high' %}
+                <span class="badge-warning">High</span>
+                {% endif %}
+            </div>
+            
+            <!-- Supply Info -->
+            <h3 class="font-semibold text-white">{{ request.supply.name }}</h3>
+            <p class="text-sm text-surface-400 mt-1">Qty: {{ request.quantity }} {{ request.supply.unit }}</p>
+            
+            <!-- Purpose -->
+            <p class="text-sm text-surface-500 mt-2 line-clamp-2">{{ request.purpose }}</p>
+            
+            <!-- Footer -->
+            <div class="mt-4 flex items-center justify-between text-xs text-surface-500">
+                <span>{{ request.requested_at|timesince }} ago</span>
+                {% if request.needed_by %}
+                <span>Needed by: {{ request.needed_by|date:"M d, Y" }}</span>
+                {% endif %}
+            </div>
+        </div>
+        
+        <!-- Actions -->
+        <div class="flex flex-col gap-2">
+            <a href="{% url 'request_detail' request.id %}" 
+               class="btn-ghost btn-sm"
+               up-layer="new modal">
+                <i data-lucide="eye" class="w-4 h-4"></i>
+            </a>
+            {% if request.qr_code %}
+            <button class="btn-ghost btn-sm" 
+                    up-layer="new modal"
+                    up-href="{% url 'request_qr' request.id %}">
+                <i data-lucide="qr-code" class="w-4 h-4"></i>
+            </button>
+            {% endif %}
+        </div>
+    </div>
+</div>

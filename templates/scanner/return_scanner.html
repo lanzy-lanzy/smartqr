@@ -1,0 +1,545 @@
+{% extends 'base.html' %}
+
+{% block title %}Return Scanner - Smart Supply{% endblock %}
+{% block page_title %}Return Scanner{% endblock %}
+
+{% block extra_head %}
+<!-- HTML5 QR Code Scanner Library -->
+<script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+{% endblock %}
+
+{% block content %}
+<div x-data="returnScanner()" class="space-y-6">
+    <!-- Header -->
+    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div>
+            <h2 class="text-2xl font-bold text-white">Return Scanner</h2>
+            <p class="text-slate-400 mt-1">Scan equipment QR codes to process returns</p>
+        </div>
+        <a href="{% url 'returns' %}" class="px-4 py-2 bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl text-slate-300 transition-colors inline-flex items-center gap-2">
+            <i data-lucide="list" class="w-4 h-4"></i>
+            View All Returns
+        </a>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <!-- Scanner Section -->
+        <div class="space-y-6">
+            <!-- Camera Scanner -->
+            <div class="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl overflow-hidden">
+                <div class="p-4 border-b border-white/10 flex items-center justify-between">
+                    <h3 class="font-semibold text-white flex items-center gap-2">
+                        <i data-lucide="scan-line" class="w-5 h-5 text-green-400"></i>
+                        QR Scanner
+                    </h3>
+                    <button type="button" 
+                            @click="toggleScanner()"
+                            :class="scannerActive ? 'bg-red-600 hover:bg-red-500' : 'bg-green-600 hover:bg-green-500'"
+                            class="px-4 py-2 rounded-lg text-sm font-medium text-white transition-colors">
+                        <span x-text="scannerActive ? 'Stop Scanner' : 'Start Scanner'"></span>
+                    </button>
+                </div>
+                
+                <div class="aspect-video bg-slate-900 relative">
+                    <!-- Scanner Container -->
+                    <div id="qr-reader" class="w-full h-full"></div>
+                    
+                    <!-- Placeholder when scanner is off -->
+                    <div x-show="!scannerActive" class="absolute inset-0 flex flex-col items-center justify-center bg-slate-900">
+                        <i data-lucide="camera-off" class="w-16 h-16 text-slate-700 mb-4"></i>
+                        <p class="text-slate-500">Click "Start Scanner" to begin</p>
+                    </div>
+                </div>
+                
+                <!-- Manual Entry -->
+                <div class="p-4 border-t border-white/10">
+                    <p class="text-sm text-slate-400 mb-3">Or enter instance code manually:</p>
+                    <div class="flex gap-3">
+                        <input type="text" 
+                               x-model="manualCode"
+                               @keyup.enter="processManualCode()"
+                               placeholder="e.g., INSTANCE-123"
+                               class="flex-1 px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-green-500/50">
+                        <button type="button" 
+                                @click="processManualCode()"
+                                class="px-4 py-2 bg-green-600 hover:bg-green-500 rounded-lg font-medium text-white transition-colors">
+                            Lookup
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Recent Scans -->
+            <div class="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-6">
+                <h3 class="font-semibold text-white mb-4 flex items-center gap-2">
+                    <i data-lucide="history" class="w-5 h-5 text-slate-400"></i>
+                    Recent Returns
+                </h3>
+                
+                <div x-show="recentReturns.length === 0" class="text-center py-8">
+                    <i data-lucide="inbox" class="w-12 h-12 text-slate-600 mx-auto mb-3"></i>
+                    <p class="text-slate-400">No returns processed yet</p>
+                </div>
+                
+                <div class="space-y-3">
+                    <template x-for="item in recentReturns" :key="item.id">
+                        <div class="flex items-center gap-4 p-3 bg-white/5 rounded-xl">
+                            <div class="w-10 h-10 rounded-lg flex items-center justify-center"
+                                 :class="item.status === 'good' ? 'bg-green-500/20' : item.status === 'damaged' ? 'bg-amber-500/20' : 'bg-red-500/20'">
+                                <i :data-lucide="item.status === 'good' ? 'check-circle' : item.status === 'damaged' ? 'alert-triangle' : 'x-circle'" 
+                                   :class="item.status === 'good' ? 'text-green-400' : item.status === 'damaged' ? 'text-amber-400' : 'text-red-400'"
+                                   class="w-5 h-5"></i>
+                            </div>
+                            <div class="flex-1 min-w-0">
+                                <p class="font-medium text-white truncate" x-text="item.name"></p>
+                                <p class="text-sm text-slate-400" x-text="item.code"></p>
+                            </div>
+                            <span class="text-xs px-2 py-1 rounded-full capitalize"
+                                  :class="item.status === 'good' ? 'bg-green-500/20 text-green-300' : item.status === 'damaged' ? 'bg-amber-500/20 text-amber-300' : 'bg-red-500/20 text-red-300'"
+                                  x-text="item.status"></span>
+                        </div>
+                    </template>
+                </div>
+            </div>
+        </div>
+
+        <!-- Pending Returns List -->
+        <div class="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl">
+            <div class="p-6 border-b border-white/10">
+                <h3 class="font-semibold text-white flex items-center gap-2">
+                    <i data-lucide="clock" class="w-5 h-5 text-amber-400"></i>
+                    Pending Returns
+                    <span class="ml-auto text-sm font-normal px-2 py-0.5 bg-amber-500/20 text-amber-300 rounded-full">
+                        {{ borrowed_items|length }}
+                    </span>
+                </h3>
+            </div>
+            
+            <div class="divide-y divide-white/5 max-h-[600px] overflow-y-auto">
+                {% for item in borrowed_items %}
+                <div class="p-4 hover:bg-white/5 transition-colors cursor-pointer"
+                     @click="lookupItem('INSTANCE-{{ item.equipment_instance.id }}')">
+                    <div class="flex items-start gap-4">
+                        <div class="w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0
+                            {% if item.is_overdue %}bg-red-500/20{% else %}bg-blue-500/20{% endif %}">
+                            {% if item.is_overdue %}
+                            <i data-lucide="alert-triangle" class="w-5 h-5 text-red-400"></i>
+                            {% else %}
+                            <i data-lucide="monitor" class="w-5 h-5 text-blue-400"></i>
+                            {% endif %}
+                        </div>
+                        <div class="flex-1 min-w-0">
+                            <p class="font-medium text-white truncate">{{ item.equipment_instance.supply.name }}</p>
+                            <p class="text-sm text-slate-400 font-mono">{{ item.equipment_instance.instance_code }}</p>
+                            <div class="flex items-center gap-4 mt-2 text-xs text-slate-500">
+                                <span>
+                                    <i data-lucide="user" class="w-3 h-3 inline mr-1"></i>
+                                    {{ item.borrower.get_full_name }}
+                                </span>
+                                <span>
+                                    <i data-lucide="calendar" class="w-3 h-3 inline mr-1"></i>
+                                    Due: {{ item.return_deadline|date:"M d" }}
+                                </span>
+                            </div>
+                        </div>
+                        {% if item.is_overdue %}
+                        <span class="text-xs px-2 py-1 rounded-full bg-red-500/20 text-red-300">
+                            {{ item.overdue_days }}d overdue
+                        </span>
+                        {% endif %}
+                    </div>
+                </div>
+                {% empty %}
+                <div class="p-8 text-center">
+                    <i data-lucide="check-circle" class="w-12 h-12 text-green-600 mx-auto mb-3"></i>
+                    <p class="text-slate-400">No pending returns</p>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Return Condition Modal -->
+    <div x-show="showModal" 
+         x-transition:enter="transition ease-out duration-200"
+         x-transition:enter-start="opacity-0"
+         x-transition:enter-end="opacity-100"
+         x-transition:leave="transition ease-in duration-150"
+         x-transition:leave-start="opacity-100"
+         x-transition:leave-end="opacity-0"
+         class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm"
+         @keydown.escape.window="closeModal()"
+         x-cloak>
+        
+        <div x-show="showModal"
+             x-transition:enter="transition ease-out duration-200"
+             x-transition:enter-start="opacity-0 scale-95"
+             x-transition:enter-end="opacity-100 scale-100"
+             x-transition:leave="transition ease-in duration-150"
+             x-transition:leave-start="opacity-100 scale-100"
+             x-transition:leave-end="opacity-0 scale-95"
+             @click.outside="closeModal()"
+             class="bg-slate-900 border border-white/10 rounded-2xl shadow-2xl max-w-lg w-full overflow-hidden">
+            
+            <!-- Modal Header -->
+            <div class="p-6 border-b border-white/10">
+                <div class="flex items-center justify-between">
+                    <h3 class="text-xl font-bold text-white">Process Return</h3>
+                    <button @click="closeModal()" class="p-2 hover:bg-white/10 rounded-lg transition-colors">
+                        <i data-lucide="x" class="w-5 h-5 text-slate-400"></i>
+                    </button>
+                </div>
+            </div>
+            
+            <!-- Item Details -->
+            <div class="p-6 border-b border-white/10 bg-white/5">
+                <div class="flex items-center gap-4">
+                    <div class="w-14 h-14 rounded-xl bg-indigo-500/20 flex items-center justify-center">
+                        <i data-lucide="monitor" class="w-7 h-7 text-indigo-400"></i>
+                    </div>
+                    <div class="flex-1">
+                        <h4 class="font-semibold text-white text-lg" x-text="scannedItem?.supply_name"></h4>
+                        <p class="text-slate-400 font-mono" x-text="scannedItem?.instance_code"></p>
+                    </div>
+                </div>
+                
+                <div class="grid grid-cols-2 gap-4 mt-4">
+                    <div>
+                        <p class="text-xs text-slate-500 uppercase">Borrower</p>
+                        <p class="text-white" x-text="scannedItem?.borrower_name"></p>
+                        <p class="text-sm text-slate-400" x-text="scannedItem?.borrower_department"></p>
+                    </div>
+                    <div>
+                        <p class="text-xs text-slate-500 uppercase">Due Date</p>
+                        <p class="text-white" x-text="scannedItem?.return_deadline"></p>
+                        <template x-if="scannedItem?.is_overdue">
+                            <p class="text-sm text-red-400">
+                                <span x-text="scannedItem?.overdue_days"></span> days overdue
+                            </p>
+                        </template>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Condition Selection -->
+            <div class="p-6 space-y-4">
+                <p class="font-medium text-white">Select return condition:</p>
+                
+                <div class="grid grid-cols-3 gap-3">
+                    <!-- Good -->
+                    <button type="button" 
+                            @click="selectedCondition = 'good'"
+                            :class="selectedCondition === 'good' ? 'ring-2 ring-green-500 border-green-500 bg-green-500/10' : 'border-white/10 hover:border-green-500/50'"
+                            class="p-4 rounded-xl border transition-all text-center">
+                        <div class="w-12 h-12 mx-auto rounded-full bg-green-500/20 flex items-center justify-center mb-2">
+                            <i data-lucide="check-circle" class="w-6 h-6 text-green-400"></i>
+                        </div>
+                        <p class="font-medium text-white">Good</p>
+                        <p class="text-xs text-slate-400 mt-1">No issues</p>
+                    </button>
+                    
+                    <!-- Damaged -->
+                    <button type="button" 
+                            @click="selectedCondition = 'damaged'"
+                            :class="selectedCondition === 'damaged' ? 'ring-2 ring-amber-500 border-amber-500 bg-amber-500/10' : 'border-white/10 hover:border-amber-500/50'"
+                            class="p-4 rounded-xl border transition-all text-center">
+                        <div class="w-12 h-12 mx-auto rounded-full bg-amber-500/20 flex items-center justify-center mb-2">
+                            <i data-lucide="alert-triangle" class="w-6 h-6 text-amber-400"></i>
+                        </div>
+                        <p class="font-medium text-white">Damaged</p>
+                        <p class="text-xs text-slate-400 mt-1">Needs repair</p>
+                    </button>
+                    
+                    <!-- Lost -->
+                    <button type="button" 
+                            @click="selectedCondition = 'lost'"
+                            :class="selectedCondition === 'lost' ? 'ring-2 ring-red-500 border-red-500 bg-red-500/10' : 'border-white/10 hover:border-red-500/50'"
+                            class="p-4 rounded-xl border transition-all text-center">
+                        <div class="w-12 h-12 mx-auto rounded-full bg-red-500/20 flex items-center justify-center mb-2">
+                            <i data-lucide="x-circle" class="w-6 h-6 text-red-400"></i>
+                        </div>
+                        <p class="font-medium text-white">Lost</p>
+                        <p class="text-xs text-slate-400 mt-1">Cannot locate</p>
+                    </button>
+                </div>
+                
+                <!-- Notes (for damaged/lost) -->
+                <div x-show="selectedCondition === 'damaged' || selectedCondition === 'lost'" x-cloak>
+                    <label class="block text-sm font-medium text-slate-300 mb-2">
+                        Notes <span x-show="selectedCondition === 'damaged'">(describe damage)</span>
+                    </label>
+                    <textarea x-model="returnNotes"
+                              rows="3"
+                              placeholder="Describe the condition or circumstances..."
+                              class="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-green-500/50 resize-none"></textarea>
+                </div>
+                
+                <!-- Batch Progress (if part of batch) -->
+                <div x-show="scannedItem?.batch_id" class="p-4 bg-white/5 rounded-xl" x-cloak>
+                    <div class="flex items-center justify-between mb-2">
+                        <span class="text-sm text-slate-400">Batch Progress</span>
+                        <span class="text-sm text-white" x-text="batchProgress"></span>
+                    </div>
+                    <div class="w-full h-2 bg-white/10 rounded-full overflow-hidden">
+                        <div class="h-full bg-green-500 transition-all duration-300" :style="'width: ' + batchProgressPercent + '%'"></div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Modal Footer -->
+            <div class="p-6 border-t border-white/10 flex justify-end gap-3">
+                <button type="button" 
+                        @click="closeModal()"
+                        class="px-4 py-2 bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl text-slate-300 transition-colors">
+                    Cancel
+                </button>
+                <button type="button" 
+                        @click="confirmReturn()"
+                        :disabled="!selectedCondition || processing"
+                        class="px-6 py-2 bg-green-600 hover:bg-green-500 disabled:bg-slate-700 disabled:cursor-not-allowed rounded-xl font-medium text-white transition-colors flex items-center gap-2">
+                    <i data-lucide="check" class="w-4 h-4" x-show="!processing"></i>
+                    <i data-lucide="loader-2" class="w-4 h-4 animate-spin" x-show="processing"></i>
+                    <span x-text="processing ? 'Processing...' : 'Confirm Return'"></span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Success Animation Modal -->
+    <div x-show="showSuccess"
+         x-transition:enter="transition ease-out duration-200"
+         x-transition:enter-start="opacity-0"
+         x-transition:enter-end="opacity-100"
+         x-transition:leave="transition ease-in duration-150"
+         x-transition:leave-start="opacity-100"
+         x-transition:leave-end="opacity-0"
+         class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm"
+         x-cloak>
+        <div class="bg-slate-900 border border-white/10 rounded-2xl p-8 text-center max-w-sm">
+            <div class="w-20 h-20 mx-auto rounded-full bg-green-500/20 flex items-center justify-center mb-4 animate-bounce">
+                <i data-lucide="check-circle" class="w-10 h-10 text-green-400"></i>
+            </div>
+            <h3 class="text-xl font-bold text-white mb-2">Return Processed!</h3>
+            <p class="text-slate-400" x-text="successMessage"></p>
+            <button @click="showSuccess = false" class="mt-6 px-6 py-2 bg-green-600 hover:bg-green-500 rounded-xl font-medium text-white transition-colors">
+                Scan Next Item
+            </button>
+        </div>
+    </div>
+
+    <!-- Error Toast -->
+    <div x-show="errorMessage"
+         x-transition
+         class="fixed bottom-4 right-4 z-50 p-4 bg-red-500/90 backdrop-blur-xl rounded-xl shadow-lg max-w-sm"
+         x-cloak>
+        <div class="flex items-start gap-3">
+            <i data-lucide="alert-circle" class="w-5 h-5 text-white flex-shrink-0 mt-0.5"></i>
+            <div class="flex-1">
+                <p class="font-medium text-white">Error</p>
+                <p class="text-sm text-red-100" x-text="errorMessage"></p>
+            </div>
+            <button @click="errorMessage = ''" class="p-1 hover:bg-white/20 rounded transition-colors">
+                <i data-lucide="x" class="w-4 h-4 text-white"></i>
+            </button>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function returnScanner() {
+    return {
+        scannerActive: false,
+        html5QrCode: null,
+        manualCode: '',
+        showModal: false,
+        showSuccess: false,
+        successMessage: '',
+        errorMessage: '',
+        processing: false,
+        scannedItem: null,
+        selectedCondition: '',
+        returnNotes: '',
+        recentReturns: [],
+        batchProgress: '0 / 0',
+        batchProgressPercent: 0,
+        
+        init() {
+            // Auto-refresh icons
+            this.$watch('showModal', () => this.$nextTick(() => lucide.createIcons()));
+            this.$watch('showSuccess', () => this.$nextTick(() => lucide.createIcons()));
+            this.$watch('recentReturns', () => this.$nextTick(() => lucide.createIcons()));
+        },
+        
+        toggleScanner() {
+            if (this.scannerActive) {
+                this.stopScanner();
+            } else {
+                this.startScanner();
+            }
+        },
+        
+        startScanner() {
+            this.html5QrCode = new Html5Qrcode("qr-reader");
+            
+            // Calculate responsive qrbox size
+            const readerElement = document.getElementById('qr-reader');
+            const qrboxSize = Math.min(readerElement.clientWidth, readerElement.clientHeight) * 0.7;
+            
+            this.html5QrCode.start(
+                { facingMode: "environment" },
+                {
+                    fps: 10,
+                    qrbox: { width: qrboxSize, height: qrboxSize }
+                },
+                (decodedText) => this.onScanSuccess(decodedText),
+                (error) => {} // Ignore scan errors (continuous scanning)
+            ).then(() => {
+                this.scannerActive = true;
+            }).catch((err) => {
+                this.errorMessage = 'Could not start camera: ' + err;
+                setTimeout(() => this.errorMessage = '', 5000);
+            });
+        },
+        
+        stopScanner() {
+            if (this.html5QrCode) {
+                this.html5QrCode.stop().then(() => {
+                    this.scannerActive = false;
+                }).catch((err) => {
+                    console.error('Error stopping scanner:', err);
+                });
+            }
+        },
+        
+        onScanSuccess(decodedText) {
+            // Pause scanner while processing
+            if (this.showModal) return;
+            
+            this.lookupItem(decodedText);
+        },
+        
+        processManualCode() {
+            if (!this.manualCode.trim()) return;
+            this.lookupItem(this.manualCode.trim());
+            this.manualCode = '';
+        },
+        
+        lookupItem(qrData) {
+            fetch('{% url "process_return_scan" %}', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                    'X-CSRFToken': '{{ csrf_token }}'
+                },
+                body: 'qr_data=' + encodeURIComponent(qrData)
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    this.scannedItem = data.data;
+                    this.selectedCondition = '';
+                    this.returnNotes = '';
+                    this.showModal = true;
+                    
+                    // If part of batch, fetch batch status
+                    if (data.data.batch_id) {
+                        this.fetchBatchStatus(data.data.batch_id);
+                    }
+                } else {
+                    this.errorMessage = data.message;
+                    setTimeout(() => this.errorMessage = '', 5000);
+                }
+            })
+            .catch(err => {
+                this.errorMessage = 'Network error: ' + err;
+                setTimeout(() => this.errorMessage = '', 5000);
+            });
+        },
+        
+        fetchBatchStatus(batchId) {
+            fetch(`/requests/batch/${batchId}/status/`)
+            .then(response => response.json())
+            .then(data => {
+                this.batchProgress = `${data.returned_items} / ${data.total_items}`;
+                this.batchProgressPercent = (data.returned_items / data.total_items) * 100;
+            })
+            .catch(err => console.error('Error fetching batch status:', err));
+        },
+        
+        closeModal() {
+            this.showModal = false;
+            this.scannedItem = null;
+            this.selectedCondition = '';
+            this.returnNotes = '';
+        },
+        
+        confirmReturn() {
+            if (!this.selectedCondition || this.processing) return;
+            
+            this.processing = true;
+            
+            const formData = new FormData();
+            formData.append('borrowed_item_id', this.scannedItem.borrowed_item_id);
+            formData.append('return_status', this.selectedCondition);
+            formData.append('notes', this.returnNotes);
+            
+            fetch('{% url "confirm_return" %}', {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': '{{ csrf_token }}'
+                },
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                this.processing = false;
+                
+                if (data.success) {
+                    // Add to recent returns
+                    this.recentReturns.unshift({
+                        id: this.scannedItem.borrowed_item_id,
+                        name: this.scannedItem.supply_name,
+                        code: this.scannedItem.instance_code,
+                        status: this.selectedCondition
+                    });
+                    
+                    // Keep only last 10
+                    if (this.recentReturns.length > 10) {
+                        this.recentReturns.pop();
+                    }
+                    
+                    // Update batch progress if applicable
+                    if (data.batch_status) {
+                        this.batchProgress = `${data.batch_status.remaining_items === 0 ? data.batch_status.remaining_items : data.batch_status.remaining_items} remaining`;
+                        if (data.batch_status.all_returned) {
+                            this.successMessage = `${data.message} - All items in batch returned!`;
+                        } else {
+                            this.successMessage = `${data.message} - ${data.batch_status.remaining_items} items remaining in batch.`;
+                        }
+                    } else {
+                        this.successMessage = data.message;
+                    }
+                    
+                    this.closeModal();
+                    this.showSuccess = true;
+                    
+                    setTimeout(() => {
+                        this.showSuccess = false;
+                    }, 3000);
+                } else {
+                    this.errorMessage = data.error || 'Failed to process return';
+                    setTimeout(() => this.errorMessage = '', 5000);
+                }
+            })
+            .catch(err => {
+                this.processing = false;
+                this.errorMessage = 'Network error: ' + err;
+                setTimeout(() => this.errorMessage = '', 5000);
+            });
+        }
+    };
+}
+</script>
+{% endblock %}

@@ -1,0 +1,10 @@
+<!-- Partial: Request rejected message -->
+<div class="p-4 bg-red-500/10 border border-red-500/30 rounded-xl flex items-center gap-3 fade-in">
+    <div class="w-10 h-10 rounded-full bg-red-500/20 flex items-center justify-center">
+        <i data-lucide="x-circle" class="w-5 h-5 text-red-400"></i>
+    </div>
+    <div>
+        <p class="font-medium text-red-300">Request Rejected</p>
+        <p class="text-sm text-red-400/70">{{ request.request_code }} - {{ request.supply.name }}</p>
+    </div>
+</div>

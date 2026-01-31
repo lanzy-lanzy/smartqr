@@ -1,0 +1,100 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block content %}
+<!-- Request QR Modal -->
+<div class="p-0 max-w-md bg-slate-900/95 backdrop-blur-xl border border-white/10 rounded-2xl overflow-hidden shadow-2xl animate-fadeIn lg:mx-auto"
+     x-data="{ isAntiGlare: false }">
+    <!-- Header with Glow -->
+    <div class="p-8 pb-4 text-center relative overflow-hidden">
+        <div class="absolute -top-24 left-1/2 -translate-x-1/2 w-48 h-48 bg-green-500/20 blur-[80px]"></div>
+        <h3 class="text-xl font-bold text-white relative z-10">Digital Request Pass</h3>
+        <p class="text-sm text-slate-400 mt-1 relative z-10">Scan at the GSO counter to collect</p>
+    </div>
+    
+    <div class="px-8 pb-8 space-y-6 text-center">
+        <!-- Request Code Badge -->
+        <div class="inline-flex items-center gap-2 px-3 py-1 bg-white/5 border border-white/10 rounded-full">
+            <span class="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse"></span>
+            <span class="font-mono text-[10px] font-bold text-slate-400 uppercase tracking-widest">{{ request.request_code }}</span>
+        </div>
+        
+        <!-- QR Code Container -->
+        {% if request.qr_code %}
+        <div class="relative group">
+            <div class="absolute inset-0 bg-green-500/10 blur-2xl group-hover:bg-green-500/20 transition-all duration-500 rounded-3xl"></div>
+            
+            <!-- Anti-Glare Optimization -->
+            <div class="relative p-6 transition-all duration-500 rounded-3xl shadow-2xl transform group-hover:scale-[1.02] border-4 overflow-hidden"
+                 :class="isAntiGlare ? 'bg-slate-400 border-slate-900/40 shadow-inner' : 'bg-white border-transparent'">
+                <img src="{{ request.qr_code.url }}" alt="QR Code" 
+                     class="w-56 h-56 mx-auto transition-all duration-500"
+                     :class="isAntiGlare ? 'brightness-90 contrast-125' : ''">
+            </div>
+
+            <!-- Scannability Controls -->
+            <div class="mt-4">
+                <button @click="isAntiGlare = !isAntiGlare" 
+                        type="button"
+                        class="inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl text-[10px] font-bold uppercase tracking-wider transition-all duration-300 border w-full select-none"
+                        :class="isAntiGlare ? 'bg-green-500 text-white border-green-400 shadow-lg shadow-green-500/20' : 'bg-white/5 text-slate-400 border-white/10 hover:bg-white/10 hover:text-slate-200'">
+                    
+                    <!-- Separate icons for better Lucide reactivity -->
+                    <template x-if="!isAntiGlare">
+                        <span class="flex items-center gap-2">
+                            <i data-lucide="sun" class="w-4 h-4"></i>
+                            Enable Anti-Glare
+                        </span>
+                    </template>
+                    <template x-if="isAntiGlare">
+                        <span class="flex items-center gap-2">
+                            <i data-lucide="sun-off" class="w-4 h-4"></i>
+                            Anti-Glare Active
+                        </span>
+                    </template>
+                </button>
+                <p class="mt-2 text-[9px] text-slate-500 uppercase tracking-widest font-medium">Toggle if camera cannot focus</p>
+            </div>
+
+            <div class="mt-4 flex flex-col gap-1">
+                <span class="text-[9px] font-bold text-slate-500 uppercase tracking-widest">Digital Payload</span>
+                <p class="text-[10px] font-mono text-slate-400 truncate px-4 py-1.5 bg-black/20 rounded-lg border border-white/5">{{ request.qr_data }}</p>
+            </div>
+        </div>
+        {% else %}
+        <div class="bg-white/5 border border-dashed border-white/10 rounded-3xl p-12">
+            <i data-lucide="qr-code" class="w-16 h-16 text-slate-700 mx-auto mb-4 opacity-50"></i>
+            <p class="text-slate-500 font-medium">QR Code not generated</p>
+        </div>
+        {% endif %}
+        
+        <!-- Request Summary -->
+        <div class="grid grid-cols-2 gap-3">
+            <div class="bg-white/5 border border-white/10 rounded-2xl p-4 text-left group hover:bg-white/10 transition-all">
+                <p class="text-[9px] font-bold text-slate-500 uppercase tracking-widest mb-1 group-hover:text-slate-400">Supply</p>
+                <p class="font-bold text-white truncate">{{ request.supply.name }}</p>
+            </div>
+            <div class="bg-white/5 border border-white/10 rounded-2xl p-4 text-left group hover:bg-white/10 transition-all">
+                <p class="text-[9px] font-bold text-slate-500 uppercase tracking-widest mb-1 group-hover:text-slate-400">Status</p>
+                <div class="flex items-center gap-2">
+                    <span class="w-2 h-2 rounded-full bg-blue-500"></span>
+                    <span class="font-bold text-white capitalize text-sm">{{ request.status }}</span>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Helpful Note -->
+        <div class="flex items-center gap-3 p-4 bg-green-500/5 border border-green-500/10 rounded-2xl text-left">
+            <div class="w-8 h-8 rounded-lg bg-green-500/20 flex items-center justify-center flex-shrink-0">
+                <i data-lucide="shield-check" class="w-4 h-4 text-green-400"></i>
+            </div>
+            <p class="text-xs text-green-300/80 leading-snug">Present this pass to the authorized GSO personnel for item verification.</p>
+        </div>
+        
+        <button class="w-full px-6 py-3.5 bg-white/5 border border-white/10 hover:bg-white/10 rounded-2xl font-bold text-slate-400 transition-all duration-300" 
+                onclick="window.history.back()" up-dismiss>
+            Dismiss Pass
+        </button>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,87 @@
+<!-- Department User Sidebar -->
+<!-- For regular department users who can submit requests and manage their own items -->
+
+<aside class="fixed lg:sticky top-0 left-0 z-50 h-screen bg-slate-900/95 backdrop-blur-xl border-r border-white/5 transition-all duration-300"
+       :class="sidebarOpen ? 'w-64 translate-x-0' : 'w-64 -translate-x-full lg:w-20 lg:translate-x-0'">
+    
+    <div class="h-full flex flex-col">
+        <!-- Logo -->
+        <div class="h-16 flex items-center border-b border-white/5 px-4">
+            <a href="{% url 'dashboard' %}" up-target="main" up-follow class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-green-500 to-green-600 flex items-center justify-center shadow-lg shadow-green-500/20 flex-shrink-0">
+                    <i data-lucide="box" class="w-5 h-5 text-white"></i>
+                </div>
+                <span class="font-bold text-lg tracking-tight text-white transition-opacity duration-200"
+                      :class="sidebarOpen ? 'opacity-100' : 'opacity-0 lg:hidden'">
+                    Smart Supply
+                </span>
+            </a>
+        </div>
+        
+        <!-- Navigation -->
+        <nav class="flex-1 py-6 px-3 space-y-1 overflow-y-auto" x-init="$nextTick(() => { if (window.lucide) lucide.createIcons(); })">
+            <!-- Dashboard -->
+            <a href="{% url 'dashboard' %}" up-target="main" up-follow
+               class="flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-200"
+               :class="currentUrl === '{% url 'dashboard' %}' ? 'bg-green-500/20 text-green-300' : 'text-slate-400 hover:bg-white/5 hover:text-white'">
+                <i data-lucide="grid-3x3" class="w-5 h-5"></i>
+                <span class="text-sm font-semibold transition-opacity" :class="sidebarOpen ? 'opacity-100' : 'opacity-0 lg:hidden'">Dashboard</span>
+            </a>
+            
+            <!-- My Requests -->
+            <a href="{% url 'my_requests' %}" up-target="main" up-follow
+               class="flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-200"
+               :class="currentUrl.startsWith('{% url 'my_requests' %}') ? 'bg-green-500/20 text-green-300' : 'text-slate-400 hover:bg-white/5 hover:text-white'">
+                <i data-lucide="clipboard-list" class="w-5 h-5"></i>
+                <span class="text-sm font-semibold transition-opacity" :class="sidebarOpen ? 'opacity-100' : 'opacity-0 lg:hidden'">My Requests</span>
+            </a>
+            
+            <!-- Batch Request (full page load - not Unpoly) -->
+            <a href="{% url 'batch_request_create' %}"
+               class="flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-200"
+               :class="currentUrl.startsWith('{% url 'batch_request_create' %}') ? 'bg-green-500/20 text-green-300' : 'text-slate-400 hover:bg-white/5 hover:text-white'">
+                <i data-lucide="layers" class="w-5 h-5"></i>
+                <span class="text-sm font-semibold transition-opacity" :class="sidebarOpen ? 'opacity-100' : 'opacity-0 lg:hidden'">Batch Request</span>
+            </a>
+            
+            <!-- Returns -->
+            <a href="{% url 'returns' %}" up-target="main" up-follow
+               class="flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-200"
+               :class="currentUrl === '{% url 'returns' %}' ? 'bg-green-500/20 text-green-300' : 'text-slate-400 hover:bg-white/5 hover:text-white'">
+                <i data-lucide="arrow-left-circle" class="w-5 h-5"></i>
+                <span class="text-sm font-semibold transition-opacity" :class="sidebarOpen ? 'opacity-100' : 'opacity-0 lg:hidden'">Returns</span>
+            </a>
+            
+            <div class="h-px bg-white/10 my-3"></div>
+            
+            <!-- Quick Actions -->
+            <div class="px-3 py-2">
+                <p class="text-xs font-bold text-slate-500 uppercase tracking-widest mb-3" :class="sidebarOpen ? 'opacity-100' : 'opacity-0 lg:hidden'">Quick Actions</p>
+                <a href="{% url 'request_create' %}" up-target="main" up-follow
+                   class="flex items-center gap-3 px-3 py-2.5 rounded-xl bg-gradient-to-r from-green-600 to-green-500 hover:from-green-500 hover:to-green-400 text-white transition-all">
+                    <i data-lucide="plus" class="w-5 h-5"></i>
+                    <span class="text-sm font-semibold transition-opacity" :class="sidebarOpen ? 'opacity-100' : 'opacity-0 lg:hidden'">New Request</span>
+                </a>
+            </div>
+        </nav>
+        
+        <!-- User Profile & Logout -->
+        <div class="border-t border-white/5 p-4">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-full bg-gradient-to-br from-green-500 to-green-600 flex items-center justify-center text-white font-semibold flex-shrink-0">
+                    {{ user.first_name.0 }}{{ user.last_name.0 }}
+                </div>
+                <div class="flex-1 min-w-0" :class="sidebarOpen ? 'block' : 'hidden lg:hidden'">
+                    <p class="text-sm font-medium text-white truncate">{{ user.get_full_name }}</p>
+                    <p class="text-xs text-slate-400 truncate">Department User</p>
+                </div>
+                <a href="{% url 'logout' %}" 
+                   class="p-2 rounded-lg hover:bg-red-500/20 hover:text-red-400 text-slate-400 transition-colors"
+                   :class="sidebarOpen ? 'block' : 'hidden lg:block'"
+                   title="Logout">
+                    <i data-lucide="log-out" class="w-4 h-4"></i>
+                </a>
+            </div>
+        </div>
+    </div>
+</aside>

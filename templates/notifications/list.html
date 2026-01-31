@@ -1,0 +1,206 @@
+{% extends 'base.html' %}
+
+{% block title %}Notifications - Smart Supply{% endblock %}
+{% block page_title %}Notifications{% endblock %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto space-y-6">
+    <!-- Header -->
+    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div>
+            <h2 class="text-2xl font-bold">Notifications</h2>
+            <p class="text-surface-400 text-sm mt-1">
+                {{ unread_count }} unread of {{ total_count }} total notifications
+            </p>
+        </div>
+        
+        <div class="flex items-center gap-3">
+            {% if unread_count > 0 %}
+            <form method="POST" action="{% url 'notification_mark_all_read' %}">
+                {% csrf_token %}
+                <button type="submit" class="btn-secondary text-sm">
+                    <i data-lucide="check-check" class="w-4 h-4"></i>
+                    Mark all read
+                </button>
+            </form>
+            {% endif %}
+            
+            {% if total_count > unread_count %}
+            <form method="POST" action="{% url 'notification_delete_all_read' %}">
+                {% csrf_token %}
+                <button type="submit" class="btn-ghost text-sm text-surface-400 hover:text-red-400">
+                    <i data-lucide="trash-2" class="w-4 h-4"></i>
+                    Delete read
+                </button>
+            </form>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Filters -->
+    <div class="flex items-center gap-2">
+        <a href="{% url 'notifications' %}" 
+           class="px-4 py-2 rounded-lg text-sm font-medium transition-colors {% if current_filter == 'all' %}bg-primary-500 text-white{% else %}bg-white/5 text-surface-400 hover:bg-white/10{% endif %}">
+            All
+        </a>
+        <a href="{% url 'notifications' %}?filter=unread" 
+           class="px-4 py-2 rounded-lg text-sm font-medium transition-colors {% if current_filter == 'unread' %}bg-primary-500 text-white{% else %}bg-white/5 text-surface-400 hover:bg-white/10{% endif %}">
+            Unread
+            {% if unread_count > 0 %}
+            <span class="ml-1 px-1.5 py-0.5 bg-red-500 rounded-full text-xs">{{ unread_count }}</span>
+            {% endif %}
+        </a>
+        <a href="{% url 'notifications' %}?filter=read" 
+           class="px-4 py-2 rounded-lg text-sm font-medium transition-colors {% if current_filter == 'read' %}bg-primary-500 text-white{% else %}bg-white/5 text-surface-400 hover:bg-white/10{% endif %}">
+            Read
+        </a>
+    </div>
+
+    <!-- Notifications List -->
+    <div class="glass-panel rounded-2xl overflow-hidden">
+        {% if notifications_list %}
+        <div class="divide-y divide-white/5">
+            {% for notification in notifications_list %}
+            <div class="p-4 hover:bg-white/[0.03] transition-colors relative group {% if not notification.is_read %}bg-primary-500/5{% endif %}">
+                <div class="flex gap-4">
+                    <!-- Icon -->
+                    <div class="w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0
+                        {% if notification.notification_type == 'request_approved' %}bg-green-500/20 text-green-400
+                        {% elif notification.notification_type == 'request_rejected' %}bg-red-500/20 text-red-400
+                        {% elif notification.notification_type == 'item_issued' %}bg-blue-500/20 text-blue-400
+                        {% elif notification.notification_type == 'item_due_soon' %}bg-amber-500/20 text-amber-400
+                        {% elif notification.notification_type == 'item_overdue' %}bg-red-500/20 text-red-400
+                        {% elif notification.notification_type == 'extension_approved' %}bg-green-500/20 text-green-400
+                        {% elif notification.notification_type == 'extension_rejected' %}bg-red-500/20 text-red-400
+                        {% elif notification.notification_type == 'account_approved' %}bg-green-500/20 text-green-400
+                        {% elif notification.notification_type == 'new_request' %}bg-accent-500/20 text-accent-400
+                        {% elif notification.notification_type == 'low_stock' %}bg-amber-500/20 text-amber-400
+                        {% else %}bg-surface-500/20 text-surface-400{% endif %}">
+                        {% if notification.notification_type == 'request_approved' %}
+                        <i data-lucide="check-circle" class="w-6 h-6"></i>
+                        {% elif notification.notification_type == 'request_rejected' %}
+                        <i data-lucide="x-circle" class="w-6 h-6"></i>
+                        {% elif notification.notification_type == 'item_issued' %}
+                        <i data-lucide="package-check" class="w-6 h-6"></i>
+                        {% elif notification.notification_type == 'item_due_soon' %}
+                        <i data-lucide="clock" class="w-6 h-6"></i>
+                        {% elif notification.notification_type == 'item_overdue' %}
+                        <i data-lucide="alert-triangle" class="w-6 h-6"></i>
+                        {% elif notification.notification_type == 'extension_approved' or notification.notification_type == 'extension_rejected' %}
+                        <i data-lucide="calendar" class="w-6 h-6"></i>
+                        {% elif notification.notification_type == 'account_approved' %}
+                        <i data-lucide="user-check" class="w-6 h-6"></i>
+                        {% elif notification.notification_type == 'new_request' %}
+                        <i data-lucide="inbox" class="w-6 h-6"></i>
+                        {% elif notification.notification_type == 'low_stock' %}
+                        <i data-lucide="package-x" class="w-6 h-6"></i>
+                        {% else %}
+                        <i data-lucide="bell" class="w-6 h-6"></i>
+                        {% endif %}
+                    </div>
+                    
+                    <!-- Content -->
+                    <div class="flex-1 min-w-0">
+                        <div class="flex items-start justify-between gap-4">
+                            <div>
+                                <p class="font-semibold {% if not notification.is_read %}text-white{% endif %}">
+                                    {{ notification.title }}
+                                </p>
+                                <p class="text-sm text-surface-400 mt-1">{{ notification.message }}</p>
+                            </div>
+                            
+                            <!-- Unread indicator -->
+                            {% if not notification.is_read %}
+                            <div class="w-2 h-2 rounded-full bg-primary-500 flex-shrink-0 mt-2"></div>
+                            {% endif %}
+                        </div>
+                        
+                        <div class="flex items-center justify-between mt-3">
+                            <p class="text-xs text-surface-500">
+                                <i data-lucide="clock" class="w-3 h-3 inline mr-1"></i>
+                                {{ notification.created_at|timesince }} ago
+                            </p>
+                            
+                            <div class="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                                {% if not notification.is_read %}
+                                <form method="POST" action="{% url 'notification_mark_read' notification.id %}">
+                                    {% csrf_token %}
+                                    <button type="submit" class="text-xs text-primary-400 hover:text-primary-300 transition-colors">
+                                        Mark read
+                                    </button>
+                                </form>
+                                {% endif %}
+                                
+                                {% if notification.link %}
+                                <a href="{{ notification.link }}" class="text-xs text-accent-400 hover:text-accent-300 transition-colors">
+                                    View details
+                                </a>
+                                {% endif %}
+                                
+                                <form method="POST" action="{% url 'notification_delete' notification.id %}">
+                                    {% csrf_token %}
+                                    <button type="submit" class="text-xs text-surface-400 hover:text-red-400 transition-colors">
+                                        Delete
+                                    </button>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        
+        <!-- Pagination -->
+        {% if notifications_list.has_other_pages %}
+        <div class="px-4 py-3 border-t border-white/5 flex items-center justify-between">
+            <p class="text-sm text-surface-400">
+                Page {{ notifications_list.number }} of {{ notifications_list.paginator.num_pages }}
+            </p>
+            <div class="flex items-center gap-2">
+                {% if notifications_list.has_previous %}
+                <a href="?page={{ notifications_list.previous_page_number }}{% if current_filter != 'all' %}&filter={{ current_filter }}{% endif %}"
+                   class="px-3 py-1 rounded-lg border border-white/10 hover:bg-white/5 transition-colors text-sm">
+                    Previous
+                </a>
+                {% endif %}
+                
+                {% if notifications_list.has_next %}
+                <a href="?page={{ notifications_list.next_page_number }}{% if current_filter != 'all' %}&filter={{ current_filter }}{% endif %}"
+                   class="px-3 py-1 rounded-lg border border-white/10 hover:bg-white/5 transition-colors text-sm">
+                    Next
+                </a>
+                {% endif %}
+            </div>
+        </div>
+        {% endif %}
+        
+        {% else %}
+        <!-- Empty State -->
+        <div class="p-12 text-center">
+            <div class="w-16 h-16 rounded-full bg-surface-800 flex items-center justify-center mx-auto mb-4">
+                <i data-lucide="bell-off" class="w-8 h-8 text-surface-500"></i>
+            </div>
+            <h3 class="text-lg font-semibold mb-2">
+                {% if current_filter == 'unread' %}
+                All caught up!
+                {% elif current_filter == 'read' %}
+                No read notifications
+                {% else %}
+                No notifications yet
+                {% endif %}
+            </h3>
+            <p class="text-surface-400">
+                {% if current_filter == 'unread' %}
+                You've read all your notifications.
+                {% elif current_filter == 'read' %}
+                Read notifications will appear here.
+                {% else %}
+                Notifications will appear here when there's activity on your requests.
+                {% endif %}
+            </p>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

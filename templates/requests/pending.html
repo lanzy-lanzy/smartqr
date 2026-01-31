@@ -1,0 +1,274 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Pending Requests - Smart Supply{% endblock %}
+{% block page_title %}Pending Requests{% endblock %}
+
+{% block content %}
+<div class="space-y-6 animate-fadeIn">
+    <!-- Header -->
+    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div>
+            <h2 class="text-3xl font-bold tracking-tight text-white">Pending Requests</h2>
+            <p class="text-slate-400 mt-1">Review and approve supply requests from departments</p>
+        </div>
+        
+        <div class="flex items-center gap-3">
+            <a href="{% url 'qr_scanner' %}" class="inline-flex items-center justify-center gap-2 px-4 py-2.5 text-sm rounded-lg font-medium transition-all duration-200 cursor-pointer bg-white/5 border border-white/10 text-slate-300 hover:bg-white/10" up-target="main" up-follow>
+                <i data-lucide="qr-code" class="w-5 h-5"></i>
+                Scan QR
+            </a>
+        </div>
+    </div>
+    
+    <!-- Filters -->
+    <div class="bg-white/5 backdrop-blur-lg border border-white/10 rounded-2xl p-4">
+        <div class="flex flex-col md:flex-row gap-4">
+            <!-- Priority Filter -->
+            <select name="priority" class="w-full md:w-40 bg-white/5 border border-white/10 rounded-lg px-4 py-2.5 text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-green-500/50 focus:border-green-500 transition-all" onchange="window.location.href='?priority=' + this.value">
+                <option value="">All Priorities</option>
+                {% for value, label in priority_choices %}
+                <option value="{{ value }}" {% if current_priority == value %}selected{% endif %}>{{ label }}</option>
+                {% endfor %}
+            </select>
+            
+            <!-- Department Filter -->
+            <select name="department" class="w-full md:w-48 bg-white/5 border border-white/10 rounded-lg px-4 py-2.5 text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-green-500/50 focus:border-green-500 transition-all" onchange="window.location.href='?department=' + this.value">
+                <option value="">All Departments</option>
+                {% for dept in departments %}
+                <option value="{{ dept.id }}" {% if current_department == dept.id|stringformat:"s" %}selected{% endif %}>{{ dept.name }}</option>
+                {% endfor %}
+            </select>
+            
+            <!-- Stats -->
+            <div class="flex-1 flex items-center justify-end gap-4 text-sm">
+                <span class="text-slate-400">
+                    <span class="font-semibold text-white">{{ requests|length }}</span> pending
+                </span>
+            </div>
+        </div>
+        </div>
+        
+        <!-- Requests List -->
+        <div class="space-y-4" id="requests-list" 
+             x-data="{ showReject: false, rejectId: null, rejectUrl: '', isBatch: false }"
+             @refresh-requests.window="window.location.reload()">
+        {% for req in requests %}
+        <div class="bg-white/5 backdrop-blur-lg border border-white/10 rounded-2xl p-6 transition-all duration-200 hover:border-white/20 hover:bg-white/[0.08]" id="request-{{ req.id }}">
+            <div class="flex flex-col lg:flex-row gap-4">
+                <!-- Requester Info -->
+                <div class="flex items-start gap-4 lg:w-64">
+                    <div class="w-12 h-12 rounded-full bg-gradient-to-br from-indigo-500 to-indigo-600 flex items-center justify-center text-white font-semibold flex-shrink-0">
+                        {{ req.requester.first_name.0 }}{{ req.requester.last_name.0 }}
+                    </div>
+                    <div>
+                        <p class="font-semibold text-white">{{ req.requester.get_full_name }}</p>
+                        <p class="text-sm text-slate-400">{{ req.requester.department.name }}</p>
+                        <p class="text-xs text-slate-500">{{ req.requester.email }}</p>
+                    </div>
+                </div>
+                
+                <!-- Request Details -->
+                <div class="flex-1">
+                    <div class="flex flex-wrap items-center gap-2 mb-2">
+                        {% if req.is_batch %}
+                            <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-bold bg-indigo-500/20 text-indigo-400 border border-indigo-500/30 uppercase tracking-widest">
+                                <i data-lucide="layers" class="w-3 h-3"></i>
+                                Batch Request
+                            </span>
+                        {% else %}
+                            <span class="font-mono text-sm text-slate-400">{{ req.request_code }}</span>
+                        {% endif %}
+                        
+                        {% if req.priority == 'urgent' %}
+                        <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-red-500/10 text-red-400 border border-red-500/30 animate-pulse">Urgent</span>
+                        {% elif req.priority == 'high' %}
+                        <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-amber-500/10 text-amber-400 border border-amber-500/30">High</span>
+                        {% elif req.priority == 'normal' %}
+                        <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-blue-500/10 text-blue-400 border border-blue-500/30">Normal</span>
+                        {% else %}
+                        <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-slate-500/10 text-slate-400 border border-slate-500/30">Low</span>
+                        {% endif %}
+                    </div>
+                    
+                    {% if req.is_batch %}
+                        <h3 class="font-bold text-xl text-white">Batch: {{ req.supply.name }} <span class="text-indigo-400 font-mono text-sm ml-2">+ {{ req.batch_item_count|add:"-1" }} other items</span></h3>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-2 mt-3">
+                            {% for b_item in req.batch_items %}
+                                <div class="flex items-center justify-between p-2 bg-white/5 border border-white/10 rounded-xl">
+                                    <span class="text-xs text-slate-300 font-medium">{{ b_item.supply.name }}</span>
+                                    <span class="text-[10px] bg-white/10 px-2 py-0.5 rounded-lg text-slate-400">{{ b_item.quantity }} {{ b_item.supply.unit }}</span>
+                                </div>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <h3 class="font-semibold text-lg text-white">{{ req.supply.name }}</h3>
+                        
+                        <div class="flex flex-wrap gap-4 mt-2 text-sm">
+                            <span class="text-slate-400">
+                                <span class="font-medium text-white">{{ req.quantity }}</span> {{ req.supply.unit }}
+                            </span>
+                            <span class="text-slate-400">
+                                Available: <span class="font-medium {% if req.supply.available_quantity >= req.quantity %}text-green-400{% else %}text-red-400{% endif %}">{{ req.supply.available_quantity }}</span>
+                            </span>
+                        </div>
+                    {% endif %}
+                    
+                    <p class="text-sm text-slate-500 mt-3">{{ req.purpose }}</p>
+                    
+                    <div class="flex flex-wrap gap-4 mt-3 text-xs text-slate-500">
+                        <span>Requested {{ req.requested_at|timesince }} ago</span>
+                        {% if req.needed_by %}
+                        <span class="{% if req.needed_by < now %}text-red-400{% endif %}">
+                            Needed by {{ req.needed_by|date:"M d, Y" }}
+                        </span>
+                        {% endif %}
+                    </div>
+                </div>
+                
+                <!-- Actions -->
+                <div class="flex lg:flex-col gap-2 lg:w-32">
+                    {% if req.is_batch %}
+                        <form method="POST" action="{% url 'batch_approve' req.batch_group_id %}" class="flex-1">
+                            {% csrf_token %}
+                            <button type="submit" class="inline-flex items-center justify-center gap-2 px-4 py-2.5 text-sm rounded-xl font-bold transition-all duration-200 cursor-pointer bg-gradient-to-r from-green-600 to-green-500 hover:from-green-500 hover:to-green-400 text-white shadow-lg shadow-green-500/20 w-full relative">
+                                <i data-lucide="check-check" class="w-4 h-4"></i>
+                                Approve Batch
+                            </button>
+                        </form>
+                        
+                        <button class="inline-flex items-center justify-center gap-2 px-4 py-2.5 text-sm rounded-lg font-medium transition-all duration-200 cursor-pointer bg-red-500/10 border border-red-500/30 text-red-400 hover:bg-red-500/20 flex-1"
+                                @click="showReject = true; rejectId = '{{ req.id }}'; rejectUrl = '{% url 'batch_reject' req.batch_group_id %}'; isBatch = true;">
+                            <i data-lucide="x" class="w-4 h-4"></i>
+                            Reject Batch
+                        </button>
+                        
+                        <a href="{% url 'batch_request_detail' req.batch_group_id %}" 
+                           class="inline-flex items-center justify-center gap-2 px-3 py-1.5 text-xs rounded-lg font-medium transition-all duration-200 cursor-pointer bg-white/5 border border-white/10 text-slate-300 hover:bg-white/10"
+                           up-layer="new modal">
+                             <i data-lucide="layout-list" class="w-4 h-4"></i>
+                             View Details
+                         </a>
+                    {% else %}
+                        <form hx-post="{% url 'approve_request' req.id %}"
+                              hx-target="#request-{{ req.id }}"
+                              hx-swap="outerHTML"
+                              hx-indicator="#indicator-{{ req.id }}"
+                              class="flex-1">
+                            {% csrf_token %}
+                            <button type="submit" class="inline-flex items-center justify-center gap-2 px-4 py-2.5 text-sm rounded-lg font-medium transition-all duration-200 cursor-pointer bg-gradient-to-r from-green-600 to-green-500 hover:from-green-500 hover:to-green-400 text-white shadow-lg shadow-green-500/20 w-full relative">
+                                <span hx-indicator class="absolute inset-0 flex items-center justify-center bg-green-600 rounded-lg opacity-0 transition-opacity" id="indicator-{{ req.id }}">
+                                    <i data-lucide="loader-2" class="w-4 h-4 animate-spin text-white"></i>
+                                </span>
+                                <i data-lucide="check" class="w-4 h-4"></i>
+                                Approve
+                            </button>
+                        </form>
+                        
+                        <button class="inline-flex items-center justify-center gap-2 px-4 py-2.5 text-sm rounded-lg font-medium transition-all duration-200 cursor-pointer bg-red-500/10 border border-red-500/30 text-red-400 hover:bg-red-500/20 flex-1"
+                                @click="showReject = true; rejectId = '{{ req.id }}'; rejectUrl = '{% url 'reject_request' req.id %}'; isBatch = false;">
+                            <i data-lucide="x" class="w-4 h-4"></i>
+                            Reject
+                        </button>
+                        
+                        <a href="{% url 'request_detail' req.id %}" 
+                           class="inline-flex items-center justify-center gap-2 px-3 py-1.5 text-xs rounded-lg font-medium transition-all duration-200 cursor-pointer bg-white/5 border border-white/10 text-slate-300 hover:bg-white/10"
+                           up-layer="new modal">
+                             <i data-lucide="eye" class="w-4 h-4"></i>
+                         </a>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        {% empty %}
+        <div class="bg-white/5 backdrop-blur-lg border border-white/10 rounded-2xl p-12 text-center">
+            <i data-lucide="inbox" class="w-16 h-16 text-slate-600 mx-auto mb-4"></i>
+            <h3 class="text-lg font-semibold text-slate-300 mb-2">No pending requests</h3>
+            <p class="text-slate-500">All requests have been processed</p>
+        </div>
+        {% endfor %}
+    <!-- Rejection Modal -->
+    <template x-teleport="body">
+        <div x-show="showReject" 
+             class="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-950/40 backdrop-blur-xl"
+             x-transition:enter="transition ease-out duration-300"
+             x-transition:enter-start="opacity-0"
+             x-transition:enter-end="opacity-100"
+             x-transition:leave="transition ease-in duration-200"
+             x-transition:leave-start="opacity-100"
+             x-transition:leave-end="opacity-0"
+             x-cloak>
+            <div @click.away="showReject = false" 
+                 class="bg-slate-900/90 border border-white/10 rounded-2xl shadow-2xl max-w-md w-full overflow-hidden animate-fadeIn"
+                 x-transition:enter="transition ease-out duration-300 scale-95"
+                 x-transition:enter-start="opacity-0 scale-95"
+                 x-transition:enter-end="opacity-100 scale-100"
+                 x-transition:leave="transition ease-in duration-200 scale-100"
+                 x-transition:leave-start="opacity-100 scale-100"
+                 x-transition:leave-end="opacity-0 scale-95">
+                
+                <!-- Modal Header -->
+                <div class="px-8 py-6 border-b border-white/10 flex justify-between items-center bg-gradient-to-r from-red-500/10 to-transparent">
+                    <div>
+                        <h3 class="text-xl font-bold text-white">Reject Request</h3>
+                        <p class="text-xs text-slate-500 mt-0.5 uppercase tracking-widest font-bold">Negative Determination</p>
+                    </div>
+                    <button @click="showReject = false" class="w-10 h-10 flex items-center justify-center rounded-xl hover:bg-white/10 text-slate-400 hover:text-white transition-all">
+                        <i data-lucide="x" class="w-5 h-5"></i>
+                    </button>
+                </div>
+                
+                <form :hx-post="rejectUrl"
+                      :hx-target="'#request-' + rejectId"
+                      hx-swap="outerHTML"
+                      @htmx:after-request="showReject = false">
+                    {% csrf_token %}
+                    <div class="p-8 space-y-6">
+                        <div class="flex items-center gap-4 p-4 bg-red-500/5 border border-red-500/10 rounded-2xl">
+                            <div class="w-10 h-10 rounded-xl bg-red-500/20 flex items-center justify-center flex-shrink-0">
+                                <i data-lucide="alert-octagon" class="w-5 h-5 text-red-400"></i>
+                            </div>
+                            <p class="text-xs text-red-300/80 leading-snug">The requester will be notified immediately of this decision and the provided reason.</p>
+                        </div>
+
+                        <div>
+                            <label class="block text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-3">Professional Justification</label>
+                            <textarea name="notes" 
+                                      class="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white placeholder-slate-600 focus:outline-none focus:ring-2 focus:ring-red-500/20 focus:border-red-500/50 transition-all resize-none italic text-sm"
+                                      placeholder="Provide the specific grounds for rejection..."
+                                      rows="4"
+                                      required></textarea>
+                        </div>
+                    </div>
+                    
+                    <div class="p-8 pt-0 flex gap-4">
+                        <button type="button" @click="showReject = false" class="flex-1 px-4 py-3.5 bg-white/5 border border-white/10 rounded-xl font-bold text-slate-500 hover:bg-white/10 transition-all">
+                            Cancel
+                        </button>
+                        <button type="submit" class="flex-2 px-8 py-3.5 bg-red-600 hover:bg-red-500 rounded-xl font-bold text-white transition-all duration-300 shadow-lg shadow-red-600/20 hover:-translate-y-1">
+                            Finalize Rejection
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </template>
+
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    document.addEventListener('htmx:afterRequest', function(evt) {
+        if (evt.detail.xhr.status === 200) {
+            const trigger = evt.detail.xhr.getResponseHeader('HX-Trigger');
+            if (trigger) {
+                const triggerObj = JSON.parse(trigger);
+                if (triggerObj.refreshRequests) {
+                    // Lucide might need re-init for the new element, but HTMX handler in base.html should deal with it
+                }
+            }
+        }
+    });
+</script>
+{% endblock %}

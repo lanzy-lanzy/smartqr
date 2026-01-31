@@ -1,0 +1,151 @@
+{% extends 'base.html' %}
+
+{% block title %}Extension Requests - Smart Supply{% endblock %}
+{% block page_title %}Extension Requests{% endblock %}
+
+{% block content %}
+<div class="space-y-6 animate-fadeIn">
+    <!-- Header -->
+    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div>
+            <h2 class="text-3xl font-bold tracking-tight text-white">Pending Extensions</h2>
+            <p class="text-slate-400 text-sm mt-1">Review and process deadline extension requests</p>
+        </div>
+        
+        <!-- Quick Stats -->
+        <div class="flex items-center gap-3">
+            <div class="bg-white/5 border border-white/10 backdrop-blur-lg rounded-lg px-4 py-2 flex items-center gap-2">
+                <i data-lucide="inbox" class="w-4 h-4 text-amber-400"></i>
+                <span class="text-sm font-medium text-white">{{ extensions.count }} Pending</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Extensions List -->
+    {% if extensions %}
+    <div class="space-y-4">
+        {% for extension in extensions %}
+        <div class="bg-white/5 backdrop-blur-lg border border-white/10 rounded-2xl p-6 hover:bg-white/[0.08] transition-colors"
+             x-data="{ showDetails: false }">
+            <div class="flex items-start gap-4">
+                <!-- Status Icon -->
+                <div class="w-12 h-12 rounded-xl bg-gradient-to-br from-amber-500/20 to-amber-600/20 flex items-center justify-center border border-amber-500/30">
+                    <i data-lucide="clock" class="w-6 h-6 text-amber-400"></i>
+                </div>
+                
+                <!-- Main Info -->
+                <div class="flex-1 min-w-0">
+                    <div class="flex items-start justify-between gap-4">
+                        <div>
+                            <h3 class="font-semibold text-white">{{ extension.borrowed_item.equipment_instance.instance_code }}</h3>
+                            <p class="text-sm text-slate-400">{{ extension.borrowed_item.equipment_instance.supply.name }}</p>
+                        </div>
+                        <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-amber-500/10 text-amber-400 border border-amber-500/30">+{{ extension.requested_days }} days</span>
+                    </div>
+                    
+                    <!-- Requester Info -->
+                    <div class="mt-3 flex items-center gap-4 text-sm">
+                        <div class="flex items-center gap-2">
+                            <div class="w-6 h-6 rounded-full bg-gradient-to-br from-indigo-500 to-indigo-600 flex items-center justify-center text-xs font-medium text-white">
+                                {{ extension.requested_by.first_name.0 }}{{ extension.requested_by.last_name.0 }}
+                            </div>
+                            <span class="text-slate-300">{{ extension.requested_by.get_full_name }}</span>
+                        </div>
+                        <span class="text-slate-600">|</span>
+                        <span class="text-slate-400">
+                            <i data-lucide="calendar" class="w-3 h-3 inline mr-1"></i>
+                            {{ extension.requested_at|date:"M d, Y H:i" }}
+                        </span>
+                    </div>
+                    
+                    <!-- Deadline Comparison -->
+                    <div class="mt-4 flex items-center gap-4 text-sm">
+                        <div class="bg-white/5 border border-white/10 rounded-lg px-3 py-2">
+                            <span class="text-slate-500 text-xs">Current</span>
+                            <p class="font-medium {% if extension.borrowed_item.is_overdue %}text-red-400{% endif %}text-white">
+                                {{ extension.original_deadline|date:"M d, Y" }}
+                            </p>
+                        </div>
+                        <i data-lucide="arrow-right" class="w-4 h-4 text-slate-600"></i>
+                        <div class="bg-white/5 border border-green-500/30 backdrop-blur-lg rounded-lg px-3 py-2">
+                            <span class="text-slate-500 text-xs">Requested</span>
+                            <p class="font-medium text-green-400">
+                                {% load tz %}
+                                {{ extension.original_deadline|date:"M d, Y" }}
+                            </p>
+                        </div>
+                    </div>
+                    
+                    <!-- Toggle Details -->
+                    <button @click="showDetails = !showDetails" 
+                            class="mt-3 text-sm text-indigo-400 hover:text-indigo-300 flex items-center gap-1 transition-colors">
+                        <span x-text="showDetails ? 'Hide Details' : 'Show Reason'"></span>
+                        <i data-lucide="chevron-down" class="w-4 h-4 transition-transform" :class="showDetails && 'rotate-180'"></i>
+                    </button>
+                    
+                    <!-- Reason (collapsed) -->
+                    <div x-show="showDetails" x-collapse class="mt-3 p-4 bg-white/5 border border-white/10 rounded-lg">
+                        <p class="text-sm text-slate-400 italic">"{{ extension.reason }}"</p>
+                    </div>
+                </div>
+                
+                <!-- Actions -->
+                <div class="flex flex-col gap-2">
+                    <form method="POST" action="{% url 'approve_extension' extension.id %}" class="inline">
+                        {% csrf_token %}
+                        <button type="submit" 
+                                class="w-full px-4 py-2 rounded-lg bg-gradient-to-r from-green-600 to-green-500 hover:from-green-500 hover:to-green-400 text-sm font-medium transition-colors text-white shadow-lg shadow-green-500/20 flex items-center gap-2 justify-center">
+                            <i data-lucide="check" class="w-4 h-4"></i>
+                            Approve
+                        </button>
+                    </form>
+                    
+                    <button @click="$refs.rejectModal{{ extension.id }}.showModal()"
+                            class="w-full px-4 py-2 rounded-lg border border-red-500/30 text-red-400 hover:bg-red-500/10 text-sm font-medium transition-colors flex items-center gap-2 justify-center">
+                        <i data-lucide="x" class="w-4 h-4"></i>
+                        Reject
+                    </button>
+                </div>
+            </div>
+            
+            <!-- Reject Modal -->
+            <dialog x-ref="rejectModal{{ extension.id }}" class="bg-white/5 backdrop-blur-lg border border-white/10 rounded-2xl p-6 max-w-md w-full">
+                <form method="POST" action="{% url 'reject_extension' extension.id %}">
+                    {% csrf_token %}
+                    <h3 class="text-lg font-semibold text-white mb-4">Reject Extension</h3>
+                    <p class="text-sm text-slate-400 mb-4">
+                        Please provide a reason for rejecting this extension request.
+                    </p>
+                    <textarea name="notes" 
+                              rows="3" 
+                              required
+                              placeholder="Reason for rejection..."
+                              class="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-3 text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-red-500/50 resize-none transition-all"></textarea>
+                    <div class="flex justify-end gap-3 mt-4">
+                        <button type="button" 
+                                @click="$refs.rejectModal{{ extension.id }}.close()"
+                                class="px-4 py-2 rounded-lg border border-white/10 text-slate-300 hover:bg-white/5 transition-colors">
+                            Cancel
+                        </button>
+                        <button type="submit" 
+                                class="px-4 py-2 rounded-lg bg-red-600 hover:bg-red-500 font-medium transition-colors text-white">
+                            Reject Extension
+                        </button>
+                    </div>
+                </form>
+            </dialog>
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <!-- Empty State -->
+    <div class="bg-white/5 backdrop-blur-lg border border-white/10 rounded-2xl p-12 text-center">
+        <div class="w-16 h-16 rounded-full bg-slate-800 flex items-center justify-center mx-auto mb-4">
+            <i data-lucide="check-circle" class="w-8 h-8 text-green-400"></i>
+        </div>
+        <h3 class="text-lg font-semibold text-white mb-2">All caught up!</h3>
+        <p class="text-slate-400">There are no pending extension requests to review.</p>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

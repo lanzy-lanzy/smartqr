@@ -1,0 +1,376 @@
+{% extends 'base.html' %}
+
+{% block title %}New Batch Request - Smart Supply{% endblock %}
+{% block page_title %}New Batch Request{% endblock %}
+
+{% block content %}
+<div x-data="batchRequestForm()" class="max-w-7xl mx-auto space-y-8 animate-fadeIn pb-24">
+    <!-- Header Section -->
+    <div class="flex flex-col md:flex-row md:items-end justify-between gap-6">
+        <div>
+            <nav class="flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest text-slate-500 mb-4">
+                <a href="{% url 'dashboard' %}" class="hover:text-green-400 transition-colors">Dashboard</a>
+                <i data-lucide="chevron-right" class="w-3 h-3"></i>
+                <a href="{% url 'my_requests' %}" class="hover:text-green-400 transition-colors">Requests</a>
+                <i data-lucide="chevron-right" class="w-3 h-3 text-slate-700"></i>
+                <span class="text-slate-300">Batch Request</span>
+            </nav>
+            <h1 class="text-4xl font-extrabold text-white tracking-tight">Request <span class="text-transparent bg-clip-text bg-gradient-to-r from-green-400 to-emerald-500">Multiple Items</span></h1>
+            <p class="text-slate-400 mt-2 text-lg">Curate and submit a batch of supplies and equipment in one go.</p>
+        </div>
+        <div class="flex items-center gap-4">
+            <a href="{% url 'my_requests' %}" class="px-6 py-3 bg-white/5 hover:bg-white/10 border border-white/10 rounded-2xl text-slate-300 font-bold transition-all flex items-center gap-2">
+                Abandon
+            </a>
+            <button type="button" 
+                    @click="submitForm()"
+                    :disabled="selectedItems.length === 0"
+                    class="px-8 py-3 bg-gradient-to-r from-green-600 to-emerald-500 hover:from-green-500 hover:to-emerald-400 disabled:from-slate-800 disabled:to-slate-800 disabled:text-slate-500 disabled:cursor-not-allowed rounded-2xl font-bold text-white transition-all shadow-xl shadow-green-500/20 hover:-translate-y-1 flex items-center gap-3">
+                <i data-lucide="send" class="w-5 h-5"></i>
+                Submit Request (<span x-text="selectedItems.length"></span>)
+            </button>
+        </div>
+    </div>
+
+    <form id="batchForm" method="POST" action="{% url 'batch_request_create' %}" class="grid grid-cols-1 xl:grid-cols-4 gap-8">
+        {% csrf_token %}
+        
+        <!-- Selection Area -->
+        <div class="xl:col-span-3 space-y-8">
+            <!-- Filter & Search Bar -->
+            <div class="bg-slate-900/50 backdrop-blur-xl border border-white/10 rounded-3xl p-6 shadow-2xl">
+                <div class="flex flex-col lg:flex-row gap-6">
+                    <!-- Categories -->
+                    <div class="flex-1 overflow-x-auto custom-scrollbar-h pb-2">
+                        <div class="flex gap-2 whitespace-nowrap">
+                            <button type="button" @click="activeCategory = 'all'"
+                                    :class="activeCategory === 'all' ? 'bg-green-500 text-slate-950 font-bold' : 'bg-white/5 text-slate-400 hover:bg-white/10'"
+                                    class="px-5 py-2.5 rounded-xl text-xs uppercase tracking-widest transition-all">
+                                All
+                            </button>
+                            <button type="button" @click="activeCategory = 'consumables'"
+                                    :class="activeCategory === 'consumables' ? 'bg-green-500 text-slate-950 font-bold' : 'bg-white/5 text-slate-400 hover:bg-white/10'"
+                                    class="px-5 py-2.5 rounded-xl text-xs uppercase tracking-widest transition-all">
+                                Consumables
+                            </button>
+                            <button type="button" @click="activeCategory = 'equipment'"
+                                    :class="activeCategory === 'equipment' ? 'bg-green-500 text-slate-950 font-bold' : 'bg-white/5 text-slate-400 hover:bg-white/10'"
+                                    class="px-5 py-2.5 rounded-xl text-xs uppercase tracking-widest transition-all">
+                                Equipment
+                            </button>
+                            <div class="w-px h-8 bg-white/10 mx-2"></div>
+                            {% for category in categories %}
+                            <button type="button" @click="activeCategory = 'cat-{{ category.id }}'"
+                                    :class="activeCategory === 'cat-{{ category.id }}' ? 'bg-emerald-500 text-slate-950 font-bold' : 'bg-white/5 text-slate-400 hover:bg-white/10'"
+                                    class="px-5 py-2.5 rounded-xl text-xs uppercase tracking-widest transition-all">
+                                {{ category.name }}
+                            </button>
+                            {% endfor %}
+                        </div>
+                    </div>
+                    
+                    <!-- Search -->
+                    <div class="lg:w-80 relative group">
+                        <i data-lucide="search" class="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-500 group-focus-within:text-green-400 transition-colors"></i>
+                        <input type="text" x-model="searchQuery"
+                               placeholder="Filter items..."
+                               class="w-full pl-12 pr-4 py-3.5 bg-white/5 border border-white/10 rounded-2xl text-white placeholder-slate-600 focus:outline-none focus:ring-2 focus:ring-green-500/20 focus:border-green-500 transition-all">
+                    </div>
+                </div>
+            </div>
+
+            <!-- Items Grid -->
+            <div class="space-y-10">
+                <!-- Consumables -->
+                <div x-show="activeCategory === 'all' || activeCategory === 'consumables' || categoryMatches('consumables')">
+                    <div class="flex items-center gap-4 mb-6">
+                        <div class="h-px bg-white/10 flex-1"></div>
+                        <h3 class="text-[10px] font-bold text-slate-500 uppercase tracking-[0.3em] flex items-center gap-3">
+                            <i data-lucide="package" class="w-4 h-4 text-green-500"></i>
+                            Consumable Supplies
+                        </h3>
+                        <div class="h-px bg-white/10 flex-1"></div>
+                    </div>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                        {% for supply in consumable_supplies %}
+                        <div x-show="matchesSearch('{{ supply.name|escapejs }}') && matchesCategory('cat-{{ supply.category.id }}')"
+                             @click="toggleSupply({{ supply.id }}, '{{ supply.name|escapejs }}', {{ supply.quantity }})"
+                             :class="isSelected('supply', {{ supply.id }}) ? 'bg-green-500/10 border-green-500 shadow-lg shadow-green-500/5' : ({{ supply.quantity }} === 0 ? 'bg-slate-900/40 border-red-500/30 opacity-60' : 'bg-slate-900/40 border-white/5 hover:border-white/20 hover:bg-white/5')"
+                             class="group relative p-6 rounded-3xl border transition-all duration-300 cursor-pointer overflow-hidden">
+                            <!-- Selection Glow -->
+                            <div x-show="isSelected('supply', {{ supply.id }})" class="absolute top-0 right-0 w-32 h-32 bg-green-500/20 blur-[60px] -mr-16 -mt-16 animate-pulse"></div>
+                            
+                            <div class="relative flex items-start gap-4">
+                                <div :class="isSelected('supply', {{ supply.id }}) ? 'bg-green-500 text-slate-950 shadow-lg shadow-green-500/20' : 'bg-slate-800 text-slate-500'"
+                                     class="w-14 h-14 rounded-2xl flex items-center justify-center flex-shrink-0 transition-all duration-300">
+                                    <i data-lucide="package" class="w-7 h-7"></i>
+                                </div>
+                                <div class="flex-1 min-w-0">
+                                    <h4 class="font-bold text-white text-lg leading-tight group-hover:text-green-400 transition-colors">{{ supply.name }}</h4>
+                                    <p class="text-xs text-slate-500 font-bold uppercase tracking-wider mt-1">{{ supply.category.name }}</p>
+                                    <div class="mt-4 flex items-center gap-2">
+                                         {% if supply.quantity > 0 %}
+                                         <span class="text-[10px] font-bold px-2 py-1 rounded-lg bg-green-500/20 text-green-400 border border-green-500/30">
+                                             {{ supply.quantity }} in stock
+                                         </span>
+                                         {% else %}
+                                         <span class="text-[10px] font-bold px-2 py-1 rounded-lg bg-red-500/20 text-red-400 border border-red-500/30">
+                                             Out of stock
+                                         </span>
+                                         {% endif %}
+                                     </div>
+                                </div>
+                            </div>
+
+                            <!-- Quantity Selection UI -->
+                            <div x-show="isSelected('supply', {{ supply.id }})" 
+                                 x-transition:enter="transition ease-out duration-200"
+                                 x-transition:enter-start="opacity-0 translate-y-2"
+                                 class="relative mt-6 pt-6 border-t border-green-500/20 flex items-center justify-between"
+                                 @click.stop>
+                                <span class="text-xs font-bold text-green-400 uppercase tracking-widest">Quantity</span>
+                                <div class="flex items-center bg-slate-950/50 rounded-xl p-1 border border-white/10">
+                                    <button type="button" @click="decrementQuantity('supply', {{ supply.id }})"
+                                            class="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-white/10 text-slate-400 transition-colors">
+                                        <i data-lucide="minus" class="w-4 h-4"></i>
+                                    </button>
+                                    <span class="w-10 text-center text-white font-bold" x-text="getQuantity('supply', {{ supply.id }})"></span>
+                                    <button type="button" @click="incrementQuantity('supply', {{ supply.id }}, {{ supply.quantity }})"
+                                            class="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-white/10 text-slate-400 transition-colors">
+                                        <i data-lucide="plus" class="w-4 h-4"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+
+                <!-- Equipment -->
+                <div x-show="activeCategory === 'all' || activeCategory === 'equipment' || categoryMatches('equipment')">
+                    <div class="flex items-center gap-4 mb-6">
+                        <div class="h-px bg-white/10 flex-1"></div>
+                        <h3 class="text-[10px] font-bold text-slate-500 uppercase tracking-[0.3em] flex items-center gap-3">
+                            <i data-lucide="monitor" class="w-4 h-4 text-indigo-400"></i>
+                            Equipment Units
+                        </h3>
+                        <div class="h-px bg-white/10 flex-1"></div>
+                    </div>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                        {% for instance in equipment_instances %}
+                        <div x-show="matchesSearch('{{ instance.supply.name|escapejs }} {{ instance.instance_code|escapejs }}') && matchesCategory('cat-{{ instance.supply.category.id }}')"
+                             @click="toggleInstance({{ instance.id }}, '{{ instance.supply.name|escapejs }}', '{{ instance.instance_code|escapejs }}')"
+                             :class="isSelected('instance', {{ instance.id }}) ? 'bg-indigo-500/10 border-indigo-500 shadow-lg shadow-indigo-500/5' : 'bg-slate-900/40 border-white/5 hover:border-white/20 hover:bg-white/5'"
+                             class="group relative p-6 rounded-3xl border transition-all duration-300 cursor-pointer overflow-hidden">
+                            
+                            <div x-show="isSelected('instance', {{ instance.id }})" class="absolute top-0 right-0 w-32 h-32 bg-indigo-500/20 blur-[60px] -mr-16 -mt-16"></div>
+                            
+                            <div class="relative flex items-start gap-4">
+                                <div :class="isSelected('instance', {{ instance.id }}) ? 'bg-indigo-500 text-slate-950 shadow-lg shadow-indigo-500/20' : 'bg-slate-800 text-slate-500'"
+                                     class="w-14 h-14 rounded-2xl flex items-center justify-center flex-shrink-0 transition-all duration-300">
+                                    <i data-lucide="monitor" class="w-7 h-7"></i>
+                                </div>
+                                <div class="flex-1 min-w-0">
+                                    <h4 class="font-bold text-white text-lg leading-tight group-hover:text-indigo-400 transition-colors">{{ instance.supply.name }}</h4>
+                                    <p class="text-sm text-slate-400 mt-1 font-mono">{{ instance.instance_code }}</p>
+                                    <div class="mt-4 flex flex-wrap gap-2">
+                                        <span class="text-[10px] font-bold px-2 py-1 rounded-lg bg-indigo-500/10 text-indigo-400 border border-indigo-500/10 uppercase tracking-widest">
+                                            {{ instance.supply.category.name }}
+                                        </span>
+                                        {% if instance.condition %}
+                                        <span class="text-[10px] font-bold px-2 py-1 rounded-lg bg-white/5 text-slate-500 uppercase tracking-widest">
+                                            {{ instance.condition }}
+                                        </span>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Sidebar: Summary & Checkout -->
+        <div class="xl:col-span-1">
+            <div class="sticky top-24 space-y-6">
+                <!-- Cart Card -->
+                <div class="bg-slate-900 border border-white/10 rounded-3xl shadow-2xl overflow-hidden">
+                    <div class="p-6 bg-gradient-to-br from-green-500/10 to-transparent border-b border-white/5">
+                        <div class="flex items-center justify-between">
+                            <h3 class="text-lg font-bold text-white flex items-center gap-3">
+                                <i data-lucide="shopping-cart" class="w-5 h-5 text-green-400"></i>
+                                Selection
+                            </h3>
+                            <span class="px-3 py-1 rounded-full bg-green-500/20 text-green-400 text-xs font-bold" x-text="selectedItems.length"></span>
+                        </div>
+                    </div>
+
+                    <div class="p-6 space-y-4">
+                        <!-- Empty State -->
+                        <div x-show="selectedItems.length === 0" class="py-12 text-center">
+                            <i data-lucide="package-open" class="w-12 h-12 text-slate-700 mx-auto mb-4"></i>
+                            <p class="text-slate-500 text-sm italic">Nothing selected yet.<br>Click items on the left to add.</p>
+                        </div>
+
+                        <!-- Items List -->
+                        <div x-show="selectedItems.length > 0" class="space-y-3 max-h-[400px] overflow-y-auto custom-scrollbar pr-1">
+                            <template x-for="item in selectedItems" :key="item.key">
+                                <div class="group p-3 bg-white/5 border border-white/5 rounded-2xl flex items-center justify-between hover:bg-white/10 hover:border-white/10 transition-all">
+                                    <div class="min-w-0 flex-1">
+                                        <p class="text-sm font-bold text-white truncate" x-text="item.name"></p>
+                                        <p class="text-[10px] text-slate-500 font-bold uppercase tracking-widest" 
+                                           x-text="item.type === 'supply' ? 'Quantity: ' + item.quantity : item.code"></p>
+                                    </div>
+                                    <button type="button" @click="removeItem(item.key)"
+                                            class="w-8 h-8 flex items-center justify-center rounded-xl bg-red-500/10 text-red-400 hover:bg-red-500 hover:text-white transition-all">
+                                        <i data-lucide="x" class="w-4 h-4"></i>
+                                    </button>
+                                    <input type="hidden" name="selected_items" :value="item.value">
+                                </div>
+                            </template>
+                        </div>
+
+                        <!-- Form Details -->
+                        <div x-show="selectedItems.length > 0" 
+                             x-transition:enter="transition ease-out duration-300"
+                             class="pt-6 border-t border-white/10 space-y-6">
+                            <div>
+                                <label class="block text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-3">Usage Purpose *</label>
+                                <textarea name="purpose" required rows="3"
+                                          class="w-full bg-slate-950/50 border border-white/10 rounded-2xl p-4 text-white text-sm placeholder-slate-700 focus:ring-2 focus:ring-green-500/20 focus:border-green-500 transition-all resize-none"
+                                          placeholder="Why do you need these?"></textarea>
+                            </div>
+
+                            <div class="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label class="block text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-3">Priority</label>
+                                    <select name="priority" 
+                                            class="w-full bg-slate-950/50 border border-white/10 rounded-2xl px-4 py-3 text-white text-xs focus:ring-2 focus:ring-green-500/20 transition-all">
+                                        {% for value, label in priority_choices %}
+                                        <option value="{{ value }}" {% if value == 'normal' %}selected{% endif %} class="bg-slate-950">{{ label }}</option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                                <div>
+                                    <label class="block text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-3">Needed By</label>
+                                    <input type="date" name="needed_by" min="{{ 'now'|date:'Y-m-d' }}"
+                                           class="w-full bg-slate-950/50 border border-white/10 rounded-2xl px-4 py-3 text-white text-xs focus:ring-2 focus:ring-green-500/20 transition-all [color-scheme:dark]">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </form>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function batchRequestForm() {
+    return {
+        selectedItems: [],
+        searchQuery: '',
+        activeCategory: 'all',
+        
+        matchesSearch(text) {
+            if (!this.searchQuery) return true;
+            return text.toLowerCase().includes(this.searchQuery.toLowerCase());
+        },
+        
+        matchesCategory(itemCategory) {
+            if (this.activeCategory === 'all') return true;
+            if (this.activeCategory === 'consumables') return true; // Shown in consumables section
+            if (this.activeCategory === 'equipment') return true; // Shown in equipment section
+            return this.activeCategory === itemCategory;
+        },
+        
+        categoryMatches(type) {
+            // Check if the active category matches any items of this type
+            return false; // Simplified for now
+        },
+        
+        isSelected(type, id) {
+            return this.selectedItems.some(item => item.type === type && item.id === id);
+        },
+        
+        getQuantity(type, id) {
+            const item = this.selectedItems.find(i => i.type === type && i.id === id);
+            return item ? item.quantity : 1;
+        },
+        
+        toggleSupply(id, name, maxQty) {
+            const key = `supply-${id}`;
+            const existing = this.selectedItems.findIndex(item => item.key === key);
+            
+            if (existing >= 0) {
+                this.selectedItems.splice(existing, 1);
+            } else {
+                this.selectedItems.push({
+                    key: key,
+                    type: 'supply',
+                    id: id,
+                    name: name,
+                    quantity: 1,
+                    maxQuantity: maxQty,
+                    value: `supply:${id}:1`
+                });
+            }
+            this.$nextTick(() => lucide.createIcons());
+        },
+        
+        toggleInstance(id, name, code) {
+            const key = `instance-${id}`;
+            const existing = this.selectedItems.findIndex(item => item.key === key);
+            
+            if (existing >= 0) {
+                this.selectedItems.splice(existing, 1);
+            } else {
+                this.selectedItems.push({
+                    key: key,
+                    type: 'instance',
+                    id: id,
+                    name: name,
+                    code: code,
+                    quantity: 1,
+                    value: `instance:${id}`
+                });
+            }
+            this.$nextTick(() => lucide.createIcons());
+        },
+        
+        incrementQuantity(type, id, max) {
+            const item = this.selectedItems.find(i => i.type === type && i.id === id);
+            if (item && item.quantity < max) {
+                item.quantity++;
+                item.value = `supply:${id}:${item.quantity}`;
+            }
+        },
+        
+        decrementQuantity(type, id) {
+            const item = this.selectedItems.find(i => i.type === type && i.id === id);
+            if (item && item.quantity > 1) {
+                item.quantity--;
+                item.value = `supply:${id}:${item.quantity}`;
+            }
+        },
+        
+        removeItem(key) {
+            const index = this.selectedItems.findIndex(item => item.key === key);
+            if (index >= 0) {
+                this.selectedItems.splice(index, 1);
+            }
+            this.$nextTick(() => lucide.createIcons());
+        },
+        
+        submitForm() {
+            if (this.selectedItems.length === 0) return;
+            document.getElementById('batchForm').submit();
+        }
+    };
+}
+</script>
+{% endblock %}

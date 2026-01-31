@@ -1,0 +1,842 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Smart Supply - Enterprise Equipment & Inventory Management">
+    <title>{% block title %}Smart Supply{% endblock %}</title>
+    
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        primary: {
+                            50: '#f0fdf4',
+                            100: '#dcfce7',
+                            200: '#bbf7d0',
+                            300: '#86efac',
+                            400: '#4ade80',
+                            500: '#22c55e',
+                            600: '#16a34a',
+                            700: '#15803d',
+                            800: '#166534',
+                            900: '#14532d',
+                        },
+                        accent: {
+                            50: '#eef2ff',
+                            100: '#e0e7ff',
+                            200: '#c7d2fe',
+                            300: '#a5b4fc',
+                            400: '#818cf8',
+                            500: '#6366f1',
+                            600: '#4f46e5',
+                            700: '#4338ca',
+                            800: '#3730a3',
+                            900: '#312e81',
+                        },
+                        surface: {
+                            50: '#f8fafc',
+                            100: '#f1f5f9',
+                            200: '#e2e8f0',
+                            300: '#cbd5e1',
+                            400: '#94a3b8',
+                            500: '#64748b',
+                            600: '#475569',
+                            700: '#334155',
+                            800: '#1e293b',
+                            900: '#0f172a',
+                            950: '#020617',
+                        }
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'system-ui', '-apple-system', 'sans-serif'],
+                        display: ['Inter', 'system-ui', 'sans-serif'],
+                    },
+                    animation: {
+                        'pulse-slow': 'pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+                        'float': 'float 6s ease-in-out infinite',
+                        'glow': 'glow 2s ease-in-out infinite alternate',
+                    },
+                    keyframes: {
+                        float: {
+                            '0%, 100%': { transform: 'translateY(0)' },
+                            '50%': { transform: 'translateY(-10px)' },
+                        },
+                        glow: {
+                            '0%': { boxShadow: '0 0 5px rgba(34, 197, 94, 0.2)' },
+                            '100%': { boxShadow: '0 0 20px rgba(34, 197, 94, 0.4)' },
+                        }
+                    },
+                    backdropBlur: {
+                        xs: '2px',
+                    }
+                }
+            }
+        }
+    </script>
+    
+    <!-- Google Fonts - Inter -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+    
+    <!-- Alpine.js -->
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+    
+    <!-- HTMX -->
+    <script src="https://unpkg.com/htmx.org@1.9.10"></script>
+    
+    <!-- Unpoly -->
+    <link rel="stylesheet" href="https://unpkg.com/unpoly@3.7.3/unpoly.min.css">
+    <script src="https://unpkg.com/unpoly@3.7.3/unpoly.min.js"></script>
+    
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
+    
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+    
+    <!-- QR Scanner Library (Global for modals) -->
+    <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+    
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="{% static 'css/custom.css' %}">
+    
+    <style>
+        /* Custom scrollbar */
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.1); border-radius: 3px; }
+        ::-webkit-scrollbar-thumb:hover { background: rgba(255, 255, 255, 0.2); }
+        
+        /* Hide scrollbar for Firefox */
+        * { scrollbar-width: thin; scrollbar-color: rgba(255, 255, 255, 0.1) transparent; }
+
+        /* Alpine Cloak */
+        [x-cloak] { display: none !important; }
+        
+        /* Navigation guard styles */
+        a.click-guarded {
+            pointer-events: none !important;
+            opacity: 0.5 !important;
+        }
+        
+        body.navigation-active {
+            cursor: wait !important;
+        }
+        
+        body.navigation-active::after {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.3);
+            z-index: 9999;
+            pointer-events: none;
+        }
+        
+        /* Loading indicator */
+        .nav-loading {
+            position: fixed;
+            top: 80px;
+            right: 20px;
+            padding: 8px 16px;
+            background: rgba(34, 197, 94, 0.9);
+            color: white;
+            border-radius: 8px;
+            font-size: 12px;
+            z-index: 10000;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            opacity: 0;
+            transition: opacity 0.2s;
+        }
+        
+        body.navigation-active .nav-loading {
+            opacity: 1;
+        }
+        
+        .nav-loading .spinner {
+            width: 14px;
+            height: 14px;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            border-top-color: white;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+        }
+        
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+    </style>
+    
+    <!-- Loading indicator -->
+    <div class="nav-loading">
+        <div class="spinner"></div>
+        Loading...
+    </div>
+    
+    {% block extra_head %}{% endblock %}
+</head>
+<body class="font-sans antialiased min-h-screen bg-slate-950 text-white"
+      x-data="{ 
+          sidebarOpen: window.innerWidth >= 1024,
+          mobileMenuOpen: false,
+          darkMode: true,
+          currentUrl: window.location.pathname
+      }"
+      @resize.window="sidebarOpen = window.innerWidth >= 1024"
+      @popstate.window="currentUrl = window.location.pathname"
+      x-init="
+          currentUrl = window.location.pathname;
+          $watch('currentUrl', function(value) {
+              // Update Unpoly layer location when URL changes
+              if (window.up) {
+                  up.layer.config.dismissOthers = true;
+              }
+          })
+      ">
+    
+    <!-- HTMX Config -->
+    <script>
+        document.body.addEventListener('htmx:configRequest', (event) => {
+            event.detail.headers['X-CSRFToken'] = '{{ csrf_token }}';
+        });
+    </script>
+    
+    {% if user.is_authenticated %}
+    <!-- Authenticated Layout -->
+    <div class="flex min-h-screen">
+        <!-- Sidebar Overlay (Mobile) -->
+        <div x-show="sidebarOpen && window.innerWidth < 1024" 
+             x-transition:enter="transition-opacity ease-out duration-300"
+             x-transition:enter-start="opacity-0"
+             x-transition:enter-end="opacity-100"
+             x-transition:leave="transition-opacity ease-in duration-200"
+             x-transition:leave-start="opacity-100"
+             x-transition:leave-end="opacity-0"
+             @click="sidebarOpen = false"
+             class="fixed inset-0 bg-black/60 backdrop-blur-sm z-40 lg:hidden"
+             x-cloak></div>
+        
+        <!-- Role-Based Sidebar Include -->
+        {% if user.role == 'admin' %}
+            {% include 'sidebars/admin_sidebar.html' %}
+        {% elif user.role == 'gso_staff' %}
+            {% include 'sidebars/gso_staff_sidebar.html' %}
+        {% else %}
+            {% include 'sidebars/department_user_sidebar.html' %}
+        {% endif %}
+        
+        <!-- DEPRECATED: Old Sidebar (kept for reference, replaced by role-based includes above) -->
+        <aside style="display:none;" class="fixed lg:sticky top-0 left-0 z-50 h-screen bg-slate-900/95 backdrop-blur-xl border-r border-white/5 transition-all duration-300"
+               :class="sidebarOpen ? 'w-64 translate-x-0' : 'w-64 -translate-x-full lg:w-20 lg:translate-x-0'">
+            
+            <div class="h-full flex flex-col">
+                <!-- Logo -->
+                <div class="h-16 flex items-center border-b border-white/5 px-4">
+                    <a href="{% url 'dashboard' %}" up-target="main" up-follow class="flex items-center gap-3">
+                         <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-green-500 to-green-600 flex items-center justify-center shadow-lg shadow-green-500/20 flex-shrink-0">
+                             <i data-lucide="box" class="w-5 h-5 text-white"></i>
+                         </div>
+                         <span class="font-bold text-lg tracking-tight text-white transition-opacity duration-200"
+                               :class="sidebarOpen ? 'opacity-100' : 'opacity-0 lg:hidden'">
+                             Smart Supply
+                         </span>
+                     </a>
+                 </div>
+                
+                <!-- Navigation -->
+                <nav class="flex-1 py-6 px-3 space-y-1 overflow-y-auto" x-init="$nextTick(() => { if (window.lucide) lucide.createIcons(); })">
+                    <!-- Dashboard -->
+                    <a href="{% url 'dashboard' %}" up-target="main" up-follow
+                       class="flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-200"
+                       :class="currentUrl === '{% url 'dashboard' %}' ? 'bg-green-500/20 text-green-300' : 'text-slate-400 hover:bg-white/5 hover:text-white'">
+                         <i data-lucide="layout-dashboard" class="w-5 h-5 flex-shrink-0"></i>
+                         <span :class="sidebarOpen ? 'opacity-100' : 'opacity-0 lg:hidden'" class="transition-opacity duration-200">Dashboard</span>
+                     </a>
+                    
+                    <!-- Inventory Section -->
+                    <div class="pt-4 pb-2 px-3" x-show="sidebarOpen">
+                        <span class="text-xs font-semibold uppercase tracking-wider text-slate-500">Inventory</span>
+                    </div>
+                    
+                    <a href="{% url 'supplies' %}" up-target="main" up-follow
+                       class="flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-200"
+                       :class="currentUrl === '{% url 'supplies' %}' ? 'bg-green-500/20 text-green-300' : 'text-slate-400 hover:bg-white/5 hover:text-white'">
+                         <i data-lucide="package" class="w-5 h-5 flex-shrink-0"></i>
+                         <span :class="sidebarOpen ? 'opacity-100' : 'opacity-0 lg:hidden'" class="transition-opacity duration-200">Supplies</span>
+                     </a>
+                     
+                    <a href="{% url 'equipment' %}" up-target="main" up-follow
+                       class="flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-200"
+                       :class="currentUrl === '{% url 'equipment' %}' || currentUrl.startsWith('{% url 'equipment' %}/') ? 'bg-green-500/20 text-green-300' : 'text-slate-400 hover:bg-white/5 hover:text-white'">
+                         <i data-lucide="monitor" class="w-5 h-5 flex-shrink-0"></i>
+                         <span :class="sidebarOpen ? 'opacity-100' : 'opacity-0 lg:hidden'" class="transition-opacity duration-200">Equipment</span>
+                     </a>
+                     
+                    <a href="{% url 'categories' %}" up-target="main" up-follow
+                       class="flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-200"
+                       :class="currentUrl === '{% url 'categories' %}' ? 'bg-green-500/20 text-green-300' : 'text-slate-400 hover:bg-white/5 hover:text-white'">
+                         <i data-lucide="folder" class="w-5 h-5 flex-shrink-0"></i>
+                         <span :class="sidebarOpen ? 'opacity-100' : 'opacity-0 lg:hidden'" class="transition-opacity duration-200">Categories</span>
+                     </a>
+                    
+                    <!-- Requests Section -->
+                    <div class="pt-4 pb-2 px-3" x-show="sidebarOpen">
+                        <span class="text-xs font-semibold uppercase tracking-wider text-slate-500">Requests</span>
+                    </div>
+                    
+                    <a href="{% url 'request_create' %}" up-target="main" up-follow
+                       class="flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-200"
+                       :class="currentUrl === '{% url 'request_create' %}' ? 'bg-green-500/20 text-green-300' : 'text-slate-400 hover:bg-white/5 hover:text-white'">
+                         <i data-lucide="file-plus" class="w-5 h-5 flex-shrink-0"></i>
+                         <span :class="sidebarOpen ? 'opacity-100' : 'opacity-0 lg:hidden'" class="transition-opacity duration-200">New Request</span>
+                     </a>
+                     
+                    <a href="{% url 'batch_request_create' %}" up-target="main" up-follow
+                       class="flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-200"
+                       :class="currentUrl === '{% url 'batch_request_create' %}' ? 'bg-green-500/20 text-green-300' : 'text-slate-400 hover:bg-white/5 hover:text-white'">
+                         <i data-lucide="layers" class="w-5 h-5 flex-shrink-0"></i>
+                         <span :class="sidebarOpen ? 'opacity-100' : 'opacity-0 lg:hidden'" class="transition-opacity duration-200">Batch Request</span>
+                     </a>
+                     
+                    <a href="{% url 'my_requests' %}" up-target="main" up-follow
+                       class="flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-200"
+                       :class="currentUrl === '{% url 'my_requests' %}' || currentUrl.startsWith('{% url 'my_requests' %}/') ? 'bg-green-500/20 text-green-300' : 'text-slate-400 hover:bg-white/5 hover:text-white'">
+                         <i data-lucide="clipboard-list" class="w-5 h-5 flex-shrink-0"></i>
+                         <span :class="sidebarOpen ? 'opacity-100' : 'opacity-0 lg:hidden'" class="transition-opacity duration-200">My Requests</span>
+                     </a>
+                    
+                    {% if user.role == 'gso_staff' or user.role == 'admin' %}
+                    <!-- Management Section -->
+                    <div class="pt-4 pb-2 px-3" x-show="sidebarOpen">
+                        <span class="text-xs font-semibold uppercase tracking-wider text-slate-500">Management</span>
+                    </div>
+                    
+                    <a href="{% url 'pending_requests' %}" up-target="main" up-follow
+                       class="flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-200"
+                       :class="currentUrl === '{% url 'pending_requests' %}' ? 'bg-green-500/20 text-green-300' : 'text-slate-400 hover:bg-white/5 hover:text-white'">
+                         <i data-lucide="inbox" class="w-5 h-5 flex-shrink-0"></i>
+                         <span :class="sidebarOpen ? 'opacity-100' : 'opacity-0 lg:hidden'" class="transition-opacity duration-200">Pending Requests</span>
+                     </a>
+                     
+                    <a href="{% url 'extensions' %}" up-target="main" up-follow
+                       class="flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-200"
+                       :class="currentUrl === '{% url 'extensions' %}' ? 'bg-green-500/20 text-green-300' : 'text-slate-400 hover:bg-white/5 hover:text-white'">
+                         <i data-lucide="clock" class="w-5 h-5 flex-shrink-0"></i>
+                         <span :class="sidebarOpen ? 'opacity-100' : 'opacity-0 lg:hidden'" class="transition-opacity duration-200">Extensions</span>
+                     </a>
+                     
+                    <a href="{% url 'qr_scanner' %}" up-target="main" up-follow
+                       class="flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-200"
+                       :class="currentUrl === '{% url 'qr_scanner' %}' ? 'bg-green-500/20 text-green-300' : 'text-slate-400 hover:bg-white/5 hover:text-white'">
+                         <i data-lucide="qr-code" class="w-5 h-5 flex-shrink-0"></i>
+                         <span :class="sidebarOpen ? 'opacity-100' : 'opacity-0 lg:hidden'" class="transition-opacity duration-200">QR Scanner</span>
+                     </a>
+                     
+                    <a href="{% url 'returns' %}" up-target="main" up-follow
+                       class="flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-200"
+                       :class="currentUrl === '{% url 'returns' %}' ? 'bg-green-500/20 text-green-300' : 'text-slate-400 hover:bg-white/5 hover:text-white'">
+                         <i data-lucide="rotate-ccw" class="w-5 h-5 flex-shrink-0"></i>
+                         <span :class="sidebarOpen ? 'opacity-100' : 'opacity-0 lg:hidden'" class="transition-opacity duration-200">Returns</span>
+                     </a>
+                     
+                    <a href="{% url 'return_scanner' %}" up-target="main" up-follow
+                       class="flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-200"
+                       :class="currentUrl === '{% url 'return_scanner' %}' ? 'bg-green-500/20 text-green-300' : 'text-slate-400 hover:bg-white/5 hover:text-white'">
+                         <i data-lucide="scan-line" class="w-5 h-5 flex-shrink-0"></i>
+                         <span :class="sidebarOpen ? 'opacity-100' : 'opacity-0 lg:hidden'" class="transition-opacity duration-200">Return Scanner</span>
+                     </a>
+                    {% endif %}
+                    
+                    {% if user.role == 'admin' %}
+                    <!-- Admin Section -->
+                    <div class="pt-4 pb-2 px-3" x-show="sidebarOpen">
+                        <span class="text-xs font-semibold uppercase tracking-wider text-slate-500">Admin</span>
+                    </div>
+                    
+                    <a href="{% url 'users' %}" up-target="main" up-follow
+                       class="flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-200"
+                       :class="currentUrl === '{% url 'users' %}' ? 'bg-green-500/20 text-green-300' : 'text-slate-400 hover:bg-white/5 hover:text-white'">
+                         <i data-lucide="users" class="w-5 h-5 flex-shrink-0"></i>
+                         <span :class="sidebarOpen ? 'opacity-100' : 'opacity-0 lg:hidden'" class="transition-opacity duration-200">Users</span>
+                     </a>
+                     
+                    <a href="{% url 'departments' %}" up-target="main" up-follow
+                       class="flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-200"
+                       :class="currentUrl === '{% url 'departments' %}' ? 'bg-green-500/20 text-green-300' : 'text-slate-400 hover:bg-white/5 hover:text-white'">
+                         <i data-lucide="building-2" class="w-5 h-5 flex-shrink-0"></i>
+                         <span :class="sidebarOpen ? 'opacity-100' : 'opacity-0 lg:hidden'" class="transition-opacity duration-200">Departments</span>
+                     </a>
+                     
+                    <a href="{% url 'analytics' %}" up-target="main" up-follow
+                       class="flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-200"
+                       :class="currentUrl === '{% url 'analytics' %}' ? 'bg-green-500/20 text-green-300' : 'text-slate-400 hover:bg-white/5 hover:text-white'">
+                         <i data-lucide="bar-chart-3" class="w-5 h-5 flex-shrink-0"></i>
+                         <span :class="sidebarOpen ? 'opacity-100' : 'opacity-0 lg:hidden'" class="transition-opacity duration-200">Analytics</span>
+                     </a>
+                     
+                    <a href="{% url 'audit_log' %}" up-target="main" up-follow
+                       class="flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-200"
+                       :class="currentUrl === '{% url 'audit_log' %}' ? 'bg-green-500/20 text-green-300' : 'text-slate-400 hover:bg-white/5 hover:text-white'">
+                         <i data-lucide="file-text" class="w-5 h-5 flex-shrink-0"></i>
+                         <span :class="sidebarOpen ? 'opacity-100' : 'opacity-0 lg:hidden'" class="transition-opacity duration-200">Audit Log</span>
+                     </a>
+                     
+                    <a href="{% url 'import' %}" up-target="main" up-follow
+                       class="flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-200"
+                       :class="currentUrl === '{% url 'import' %}' ? 'bg-green-500/20 text-green-300' : 'text-slate-400 hover:bg-white/5 hover:text-white'">
+                         <i data-lucide="upload" class="w-5 h-5 flex-shrink-0"></i>
+                         <span :class="sidebarOpen ? 'opacity-100' : 'opacity-0 lg:hidden'" class="transition-opacity duration-200">Import Data</span>
+                     </a>
+                    {% endif %}
+                </nav>
+                
+                <!-- User Profile -->
+                <div class="border-t border-white/5 p-4">
+                    <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 rounded-full bg-gradient-to-br from-indigo-500 to-indigo-600 flex items-center justify-center text-white font-semibold flex-shrink-0">
+                            {{ user.first_name.0 }}{{ user.last_name.0 }}
+                        </div>
+                        <div class="flex-1 min-w-0" x-show="sidebarOpen">
+                            <p class="text-sm font-medium text-white truncate">{{ user.get_full_name }}</p>
+                            <p class="text-xs text-slate-400 truncate">{{ user.get_role_display }}</p>
+                        </div>
+                        <a href="{% url 'logout' %}" up-target="main"
+                           class="p-2 rounded-lg hover:bg-white/10 transition-colors"
+                           x-show="sidebarOpen"
+                           title="Logout">
+                            <i data-lucide="log-out" class="w-4 h-4 text-slate-400"></i>
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </aside>
+        <!-- End of deprecated sidebar -->
+        
+        <!-- Main Content -->
+        <div class="flex-1 flex flex-col min-w-0 transition-all duration-300"
+             :class="sidebarOpen ? 'lg:ml-0' : ''">
+            <!-- Top Bar -->
+            <header class="sticky top-0 z-30 h-16 bg-slate-900/80 backdrop-blur-xl border-b border-white/5">
+                <div class="h-full px-4 lg:px-6 flex items-center justify-between gap-4">
+                    <!-- Mobile menu button -->
+                    <button @click="sidebarOpen = !sidebarOpen" 
+                            class="p-2 rounded-lg hover:bg-white/10 transition-colors text-slate-400 hover:text-white">
+                        <i data-lucide="menu" class="w-5 h-5"></i>
+                    </button>
+                    
+                    <!-- Page Title -->
+                    <h1 class="text-lg font-semibold tracking-tight text-white flex-1">
+                        {% block page_title %}Dashboard{% endblock %}
+                    </h1>
+                    
+                    <!-- Search -->
+                    <div class="hidden md:flex items-center">
+                        <div class="relative">
+                            <i data-lucide="search" class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400"></i>
+                            <input type="text" 
+                                   placeholder="Search supplies..." 
+                                   class="w-64 pl-10 pr-4 py-2 bg-white/5 border border-white/10 rounded-lg text-sm text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-green-500/50 focus:border-green-500 transition-all">
+                        </div>
+                    </div>
+                    
+                    <!-- Actions -->
+                    <div class="flex items-center gap-2">
+                        <!-- Notifications -->
+                        <div class="relative" x-data="{ open: false }" @click.outside="open = false">
+                            <button @click="open = !open" 
+                                    class="relative p-2 rounded-lg hover:bg-white/10 transition-colors text-slate-400 hover:text-white">
+                                <i data-lucide="bell" class="w-5 h-5"></i>
+                                {% if notifications_count > 0 %}
+                                <span class="absolute -top-0.5 -right-0.5 min-w-[18px] h-[18px] bg-red-500 rounded-full text-xs font-bold flex items-center justify-center px-1 text-white animate-pulse">
+                                    {{ notifications_count }}
+                                </span>
+                                {% endif %}
+                            </button>
+                            
+                            <!-- Dropdown -->
+                            <div x-show="open" 
+                                 x-transition:enter="transition ease-out duration-200"
+                                 x-transition:enter-start="opacity-0 scale-95"
+                                 x-transition:enter-end="opacity-100 scale-100"
+                                 x-transition:leave="transition ease-in duration-150"
+                                 x-transition:leave-start="opacity-100 scale-100"
+                                 x-transition:leave-end="opacity-0 scale-95"
+                                 class="absolute right-0 mt-2 w-80 sm:w-96 bg-slate-900/95 backdrop-blur-xl border border-white/10 rounded-2xl shadow-2xl z-50 overflow-hidden"
+                                 x-cloak>
+                                
+                                <!-- Header -->
+                                <div class="p-4 border-b border-white/10 flex items-center justify-between">
+                                    <h3 class="font-semibold text-white">Notifications</h3>
+                                    {% if notifications_count > 0 %}
+                                    <form method="POST" action="{% url 'notification_mark_all_read' %}" class="inline">
+                                        {% csrf_token %}
+                                        <button type="submit" class="text-xs text-green-400 hover:text-green-300 transition-colors">
+                                            Mark all read
+                                        </button>
+                                    </form>
+                                    {% endif %}
+                                </div>
+                                
+                                <!-- Notifications List -->
+                                <div class="max-h-96 overflow-y-auto divide-y divide-white/5">
+                                    {% for notification in notifications %}
+                                    <div class="p-4 hover:bg-white/5 transition-colors relative group">
+                                        <div class="flex gap-3">
+                                            <!-- Icon -->
+                                            <div class="w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0
+                                                {% if notification.notification_type == 'request_approved' %}bg-green-500/20 text-green-400
+                                                {% elif notification.notification_type == 'request_rejected' %}bg-red-500/20 text-red-400
+                                                {% elif notification.notification_type == 'item_issued' %}bg-blue-500/20 text-blue-400
+                                                {% elif notification.notification_type == 'item_due_soon' %}bg-amber-500/20 text-amber-400
+                                                {% elif notification.notification_type == 'item_overdue' %}bg-red-500/20 text-red-400
+                                                {% elif notification.notification_type == 'new_request' %}bg-indigo-500/20 text-indigo-400
+                                                {% else %}bg-slate-500/20 text-slate-400{% endif %}">
+                                                {% if notification.notification_type == 'request_approved' %}
+                                                <i data-lucide="check-circle" class="w-5 h-5"></i>
+                                                {% elif notification.notification_type == 'request_rejected' %}
+                                                <i data-lucide="x-circle" class="w-5 h-5"></i>
+                                                {% elif notification.notification_type == 'item_issued' %}
+                                                <i data-lucide="package-check" class="w-5 h-5"></i>
+                                                {% elif notification.notification_type == 'item_due_soon' %}
+                                                <i data-lucide="clock" class="w-5 h-5"></i>
+                                                {% elif notification.notification_type == 'item_overdue' %}
+                                                <i data-lucide="alert-triangle" class="w-5 h-5"></i>
+                                                {% elif notification.notification_type == 'new_request' %}
+                                                <i data-lucide="inbox" class="w-5 h-5"></i>
+                                                {% else %}
+                                                <i data-lucide="bell" class="w-5 h-5"></i>
+                                                {% endif %}
+                                            </div>
+                                            
+                                            <!-- Content -->
+                                            <div class="flex-1 min-w-0">
+                                                <p class="font-medium text-sm text-white truncate">{{ notification.title }}</p>
+                                                <p class="text-xs text-slate-400 line-clamp-2">{{ notification.message }}</p>
+                                                <p class="text-xs text-slate-500 mt-1">{{ notification.created_at|timesince }} ago</p>
+                                            </div>
+                                            
+                                            <!-- Mark as Read -->
+                                            <form method="POST" action="{% url 'notification_mark_read' notification.id %}" class="opacity-0 group-hover:opacity-100 transition-opacity">
+                                                {% csrf_token %}
+                                                <button type="submit" class="p-1 rounded hover:bg-white/10 transition-colors" title="Mark as read">
+                                                    <i data-lucide="check" class="w-4 h-4 text-slate-400"></i>
+                                                </button>
+                                            </form>
+                                        </div>
+                                        
+                                        {% if notification.link %}
+                                        <a href="{{ notification.link }}" class="absolute inset-0" @click="open = false"></a>
+                                        {% endif %}
+                                    </div>
+                                    {% empty %}
+                                    <div class="p-8 text-center">
+                                        <i data-lucide="bell-off" class="w-10 h-10 text-slate-600 mx-auto mb-2"></i>
+                                        <p class="text-sm text-slate-400">No new notifications</p>
+                                    </div>
+                                    {% endfor %}
+                                </div>
+                                
+                                <!-- Footer -->
+                                <div class="p-3 border-t border-white/10 text-center">
+                                    <a href="{% url 'notifications' %}" up-target="main" up-follow
+                                       class="text-sm text-green-400 hover:text-green-300 transition-colors"
+                                       @click="open = false">
+                                         View all notifications
+                                     </a>
+                                 </div>
+                                </div>
+                                </div>
+                                
+                                <!-- Quick Add -->
+                                <a href="{% url 'request_create' %}" up-target="main" up-follow
+                                class="hidden sm:flex items-center gap-2 px-4 py-2 bg-green-600 hover:bg-green-500 rounded-lg font-medium text-sm text-white transition-colors">
+                                <i data-lucide="plus" class="w-4 h-4"></i>
+                                <span>New Request</span>
+                                </a>
+                    </div>
+                </div>
+            </header>
+            
+            <!-- Page Content -->
+            <main class="flex-1 p-4 lg:p-6">
+                <!-- Alerts -->
+                {% if messages %}
+                <div class="mb-6 space-y-3">
+                    {% for message in messages %}
+                    <div class="p-4 rounded-xl border-l-4 flex items-start gap-3
+                        {% if message.tags == 'success' %}bg-green-500/10 border-l-green-500
+                        {% elif message.tags == 'error' %}bg-red-500/10 border-l-red-500
+                        {% elif message.tags == 'warning' %}bg-amber-500/10 border-l-amber-500
+                        {% else %}bg-indigo-500/10 border-l-indigo-500{% endif %}"
+                         x-data="{ show: true }"
+                         x-show="show"
+                         x-transition>
+                        {% if message.tags == 'success' %}
+                        <i data-lucide="check-circle" class="w-5 h-5 text-green-400 flex-shrink-0 mt-0.5"></i>
+                        {% elif message.tags == 'error' %}
+                        <i data-lucide="x-circle" class="w-5 h-5 text-red-400 flex-shrink-0 mt-0.5"></i>
+                        {% elif message.tags == 'warning' %}
+                        <i data-lucide="alert-triangle" class="w-5 h-5 text-amber-400 flex-shrink-0 mt-0.5"></i>
+                        {% else %}
+                        <i data-lucide="info" class="w-5 h-5 text-indigo-400 flex-shrink-0 mt-0.5"></i>
+                        {% endif %}
+                        <p class="flex-1 text-sm text-white">{{ message }}</p>
+                        <button @click="show = false" class="p-1 hover:bg-white/10 rounded transition-colors">
+                            <i data-lucide="x" class="w-4 h-4 text-slate-400"></i>
+                        </button>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% endif %}
+                
+                <!-- Overdue Warning Banner -->
+                {% if user.has_overdue_items %}
+                <div class="mb-6 bg-red-500/10 border border-red-500/30 rounded-xl p-4 flex items-center gap-4 animate-pulse-slow">
+                    <div class="w-12 h-12 rounded-full bg-red-500/20 flex items-center justify-center">
+                        <i data-lucide="alert-octagon" class="w-6 h-6 text-red-400"></i>
+                    </div>
+                    <div class="flex-1">
+                        <h3 class="font-semibold text-red-300">You have overdue items!</h3>
+                        <p class="text-sm text-red-200/80">Please return {{ user.overdue_items.count }} overdue item(s) to make new requests.</p>
+                    </div>
+                    <a href="{% url 'my_requests' %}?status=overdue" up-target="main"
+                       class="px-4 py-2 bg-red-500 hover:bg-red-400 rounded-lg text-sm font-medium text-white transition-colors">
+                        View Items
+                    </a>
+                </div>
+                {% endif %}
+                
+                {% block content %}{% endblock %}
+            </main>
+            
+            <!-- Footer -->
+            <footer class="border-t border-white/5 py-4 px-6">
+                <p class="text-center text-sm text-slate-500">
+                    Smart Supply Management System &copy; {% now "Y" %}
+                </p>
+            </footer>
+        </div>
+    </div>
+    
+    {% else %}
+    <!-- Public/Auth Layout -->
+    <div class="min-h-screen flex flex-col">
+        {% block public_content %}{% endblock %}
+    </div>
+    {% endif %}
+    
+    <!-- Unpoly Modal Container -->
+    <div id="modal-container"></div>
+    
+    <!-- Unpoly Config & Lifecycle -->
+    <script>
+        function initGlobal() {
+            if (window.lucide) lucide.createIcons();
+            
+            // Re-initialize Alpine on new fragments
+            // This is crucial for complex x-data components like batchRequestForm
+            if (window.Alpine) {
+                // Force Alpine to discover and initialize new x-data elements
+                document.querySelectorAll('[x-data]').forEach(el => {
+                    // Check if Alpine already initialized this element
+                    if (!el.__x) {
+                        // Remove old Alpine markers if any
+                        el.removeAttribute('x-init');
+                        // Initialize the element with Alpine
+                        if (window.Alpine.initTree) {
+                            window.Alpine.initTree(el);
+                        }
+                    }
+                });
+                
+                // Also discover any new elements with x-* directives
+                if (window.Alpine.discover) {
+                    window.Alpine.discover();
+                }
+            }
+        }
+
+        // Function to update Alpine currentUrl
+        function updateCurrentUrl() {
+            const body = document.querySelector('body');
+            if (window.Alpine && body) {
+                // Alpine.store or direct data property update
+                const data = Alpine.$data(body);
+                if (data) {
+                    data.currentUrl = window.location.pathname;
+                }
+            }
+        }
+
+        // Run on initial load
+        document.addEventListener('DOMContentLoaded', function() {
+            initGlobal();
+            updateCurrentUrl();
+            updatePageTitle();
+        });
+        
+        // Unpoly lifecycle hooks
+        up.on('up:fragment:inserted', (event) => {
+            // Initialize Alpine FIRST, before other operations
+            // Use a small delay to ensure the fragment is fully in the DOM
+            setTimeout(() => {
+                initGlobal();
+            }, 0);
+            
+            // Update URL and title (these don't depend on Alpine initialization)
+            updateCurrentUrl();
+            updatePageTitle();
+            
+            // Scroll main content to top smoothly
+            const main = document.querySelector('main');
+            if (main) {
+                main.scrollTop = 0;
+            }
+        });
+
+        // Ensure scanner stops when leaving a page to prevent ghost processes
+        up.on('up:fragment:destroyed', (event) => {
+            // If there's a global scanner instance, we could stop it here
+        });
+        
+        // Update URL before requesting
+        up.on('up:request:started', (event) => {
+            // Pre-emptively update URL for instant visual feedback
+            const link = event.request.origin;
+            if (link && link.href) {
+                try {
+                    const url = new URL(link.href);
+                    const body = document.querySelector('body');
+                    if (window.Alpine && body) {
+                        const data = Alpine.$data(body);
+                        if (data) {
+                            data.currentUrl = url.pathname;
+                        }
+                    }
+                } catch (e) {
+                    console.error('Error updating URL pre-emptively:', e);
+                }
+            }
+        });
+
+        // Global Unpoly Configuration
+        // Only follow links with up-follow attribute or specific targets
+        up.link.config.followSelectors.push('a[up-follow]');
+        up.link.config.followSelectors.push('a[up-target]');
+        up.form.config.submitSelectors.push('form[up-submit]');
+        up.fragment.config.mainTargets = ['main', '.content', '#up-main'];
+        
+        // Ensure proper fragment replacement
+        up.fragment.config.fallbacks = ['main', 'body'];
+        up.fragment.config.keepIntactSelectors = ['script', 'style'];
+        up.fragment.config.restoreScroll = 'auto';
+        
+        // Important: Keep form data when swapping (helps with Alpine state)
+        up.fragment.config.resetSelectors = [];
+        
+        // Ensure Unpoly doesn't interfere with Alpine initialization timing
+        up.fragment.config.parseResponseType = 'auto';
+        
+        // Prevent multiple simultaneous navigations
+        let navigationInProgress = false;
+        
+        function resetNavigation() {
+            navigationInProgress = false;
+            document.body.classList.remove('navigation-active');
+            document.querySelectorAll('a[up-follow].click-guarded').forEach(el => {
+                el.classList.remove('click-guarded');
+            });
+        }
+        
+        up.on('up:request:started', function(event) {
+            if (navigationInProgress) {
+                event.preventDefault();
+                return;
+            }
+            navigationInProgress = true;
+            document.body.classList.add('navigation-active');
+        });
+        
+        up.on('up:navigation:ended', function(event) {
+            resetNavigation();
+        });
+        
+        up.on('up:request:aborted', function(event) {
+            resetNavigation();
+        });
+        
+        // Reset navigation on popstate (browser back/forward)
+        window.addEventListener('popstate', function() {
+            resetNavigation();
+            updateCurrentUrl();
+        });
+        
+        // Guard against rapid clicks - add click handler to disable links briefly
+        document.addEventListener('click', function(e) {
+            const link = e.target.closest('a[up-follow]');
+            if (link && !link.classList.contains('click-guarded')) {
+                link.classList.add('click-guarded');
+                setTimeout(function() {
+                    link.classList.remove('click-guarded');
+                }, 500);
+            }
+        }, true);
+        
+        // Fallback: if fragment extraction fails, do full page load
+        up.on('up:fragment:missing', function(event) {
+            window.location.href = event.url;
+        });
+        
+        // Also fallback on any navigation error
+        up.on('up:request:error', function(event) {
+            resetNavigation();
+            // Try full page load as fallback
+            if (event.url) {
+                window.location.href = event.url;
+            }
+        });
+        
+        // Update URL and page title when Unpoly changes location
+        up.on('up:location:changed', function(event) {
+            // Use setTimeout to ensure it happens after URL is updated
+            setTimeout(updateCurrentUrl, 0);
+            
+            // Update page title from document title
+            updatePageTitle();
+        });
+        
+        // Update page title in header from browser document title
+        function updatePageTitle() {
+            // Extract title from <title> tag (set by Django template)
+            const browserTitle = document.title;
+            const titleMatch = browserTitle.match(/^(.*?)\s*-\s*Smart Supply|^(.*?)$/);
+            const pageTitle = titleMatch ? (titleMatch[1] || titleMatch[2]) : 'Dashboard';
+            
+            // Update header title
+            const headerTitle = document.querySelector('header h1');
+            if (headerTitle) {
+                headerTitle.textContent = pageTitle;
+            }
+        }
+        
+        // Handle HTMX and Unpoly working together
+        document.body.addEventListener('htmx:afterSwap', function() {
+            initGlobal();
+            updateCurrentUrl();
+        });
+    </script>
+    
+    {% block extra_js %}{% endblock %}
+</body>
+</html>

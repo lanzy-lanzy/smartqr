@@ -1,0 +1,27 @@
+<!-- Shared Sidebar Header & Navigation Structure -->
+<!-- This component is role-agnostic and provides the sidebar shell -->
+<!-- The actual navigation links are provided by role-specific sidebar includes -->
+
+<aside class="fixed lg:sticky top-0 left-0 z-50 h-screen bg-slate-900/95 backdrop-blur-xl border-r border-white/5 transition-all duration-300"
+       :class="sidebarOpen ? 'w-64 translate-x-0' : 'w-64 -translate-x-full lg:w-20 lg:translate-x-0'">
+    
+    <div class="h-full flex flex-col">
+        <!-- Logo -->
+        <div class="h-16 flex items-center border-b border-white/5 px-4">
+            <a href="{% url 'dashboard' %}" up-target="main" up-follow class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-green-500 to-green-600 flex items-center justify-center shadow-lg shadow-green-500/20 flex-shrink-0">
+                    <i data-lucide="box" class="w-5 h-5 text-white"></i>
+                </div>
+                <span class="font-bold text-lg tracking-tight text-white transition-opacity duration-200"
+                      :class="sidebarOpen ? 'opacity-100' : 'opacity-0 lg:hidden'">
+                    Smart Supply
+                </span>
+            </a>
+        </div>
+        
+        <!-- Navigation - Inserted by role-specific sidebar -->
+        <nav class="flex-1 py-6 px-3 space-y-1 overflow-y-auto" x-init="$nextTick(() => { if (window.lucide) lucide.createIcons(); })">
+            {% block sidebar_nav %}{% endblock %}
+        </nav>
+    </div>
+</aside>

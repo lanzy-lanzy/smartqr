@@ -1,0 +1,144 @@
+{% extends 'base.html' %}
+
+{% block title %}Request Extension - Smart Supply{% endblock %}
+{% block page_title %}Request Extension{% endblock %}
+
+{% block content %}
+<div class="max-w-2xl mx-auto">
+    <!-- Breadcrumb -->
+    <nav class="mb-6">
+        <ol class="flex items-center gap-2 text-sm text-surface-400">
+            <li><a href="{% url 'my_requests' %}" class="hover:text-white transition-colors">My Requests</a></li>
+            <li><i data-lucide="chevron-right" class="w-4 h-4"></i></li>
+            <li class="text-white">Request Extension</li>
+        </ol>
+    </nav>
+
+    <!-- Item Info Card -->
+    <div class="glass-panel rounded-2xl p-6 mb-6">
+        <div class="flex items-start gap-4">
+            <div class="w-14 h-14 rounded-xl bg-gradient-to-br from-amber-500/20 to-amber-600/20 flex items-center justify-center border border-amber-500/30">
+                <i data-lucide="clock" class="w-7 h-7 text-amber-400"></i>
+            </div>
+            <div class="flex-1">
+                <h2 class="text-lg font-semibold mb-1">{{ borrowed_item.equipment_instance.instance_code }}</h2>
+                <p class="text-surface-400">{{ borrowed_item.equipment_instance.supply.name }}</p>
+                
+                <div class="mt-4 grid grid-cols-2 gap-4">
+                    <div class="glass-panel rounded-lg p-3">
+                        <p class="text-xs text-surface-500 uppercase tracking-wider mb-1">Borrowed On</p>
+                        <p class="text-sm font-medium">{{ borrowed_item.borrowed_at|date:"M d, Y" }}</p>
+                    </div>
+                    <div class="glass-panel rounded-lg p-3 {% if borrowed_item.is_overdue %}border border-red-500/30{% endif %}">
+                        <p class="text-xs text-surface-500 uppercase tracking-wider mb-1">Current Deadline</p>
+                        <p class="text-sm font-medium {% if borrowed_item.is_overdue %}text-red-400{% else %}text-amber-400{% endif %}">
+                            {{ borrowed_item.return_deadline|date:"M d, Y" }}
+                        </p>
+                    </div>
+                </div>
+                
+                {% if borrowed_item.is_overdue %}
+                <div class="mt-4 flex items-center gap-2 text-red-400 text-sm">
+                    <i data-lucide="alert-triangle" class="w-4 h-4"></i>
+                    <span>This item is {{ borrowed_item.overdue_days }} day(s) overdue</span>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Extension Form -->
+    <form method="POST" class="glass-panel rounded-2xl p-6">
+        {% csrf_token %}
+        
+        <h3 class="text-lg font-semibold mb-6">Extension Details</h3>
+        
+        <div class="space-y-6">
+            <!-- Days Requested -->
+            <div>
+                <label class="block text-sm font-medium text-surface-300 mb-2">
+                    Additional Days Requested
+                </label>
+                <div class="flex items-center gap-4">
+                    <input type="range" 
+                           name="days" 
+                           id="daysSlider"
+                           min="1" 
+                           max="14" 
+                           value="3"
+                           class="flex-1 h-2 bg-surface-700 rounded-lg appearance-none cursor-pointer accent-primary-500"
+                           x-data
+                           @input="$refs.daysDisplay.textContent = $el.value + ' day' + ($el.value > 1 ? 's' : '')">
+                    <span class="w-24 text-center font-medium text-primary-400 glass-panel px-3 py-2 rounded-lg" x-ref="daysDisplay">3 days</span>
+                </div>
+                <div class="flex justify-between text-xs text-surface-500 mt-2">
+                    <span>1 day</span>
+                    <span>14 days</span>
+                </div>
+            </div>
+
+            <!-- New Deadline Preview -->
+            <div class="glass-panel rounded-lg p-4 border border-primary-500/30 bg-primary-500/5"
+                 x-data="{ 
+                     currentDeadline: new Date('{{ borrowed_item.return_deadline|date:'Y-m-d' }}'),
+                     get newDeadline() {
+                         const days = parseInt(document.getElementById('daysSlider').value);
+                         const date = new Date(this.currentDeadline);
+                         date.setDate(date.getDate() + days);
+                         return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+                     }
+                 }"
+                 @input.window="$el.querySelector('[x-text]') && $forceUpdate()">
+                <div class="flex items-center gap-3">
+                    <i data-lucide="calendar-check" class="w-5 h-5 text-primary-400"></i>
+                    <div>
+                        <p class="text-sm text-surface-400">New deadline will be</p>
+                        <p class="font-semibold text-primary-400" x-text="newDeadline">{{ borrowed_item.return_deadline }}</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Reason -->
+            <div>
+                <label for="reason" class="block text-sm font-medium text-surface-300 mb-2">
+                    Reason for Extension <span class="text-red-400">*</span>
+                </label>
+                <textarea name="reason" 
+                          id="reason" 
+                          rows="4" 
+                          required
+                          placeholder="Please explain why you need additional time..."
+                          class="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-3 text-white placeholder-surface-500 focus:outline-none focus:ring-2 focus:ring-primary-500/50 focus:border-primary-500 transition-all resize-none"></textarea>
+                <p class="text-xs text-surface-500 mt-1">A clear explanation helps GSO staff process your request faster.</p>
+            </div>
+        </div>
+
+        <!-- Actions -->
+        <div class="flex items-center justify-end gap-3 mt-8 pt-6 border-t border-white/10">
+            <a href="{% url 'my_requests' %}" 
+               class="px-6 py-2.5 rounded-lg border border-white/10 text-surface-300 hover:bg-white/5 transition-colors">
+                Cancel
+            </a>
+            <button type="submit" 
+                    class="px-6 py-2.5 rounded-lg bg-gradient-to-r from-primary-600 to-primary-500 hover:from-primary-500 hover:to-primary-400 font-medium transition-all shadow-lg shadow-primary-500/20">
+                <i data-lucide="send" class="w-4 h-4 inline mr-2"></i>
+                Submit Request
+            </button>
+        </div>
+    </form>
+
+    <!-- Info Box -->
+    <div class="mt-6 glass-panel rounded-xl p-4 flex items-start gap-3 border-l-4 border-accent-500">
+        <i data-lucide="info" class="w-5 h-5 text-accent-400 flex-shrink-0 mt-0.5"></i>
+        <div class="text-sm text-surface-300">
+            <p class="font-medium text-white mb-1">Extension Policy</p>
+            <ul class="list-disc list-inside space-y-1 text-surface-400">
+                <li>Extensions are subject to GSO staff approval</li>
+                <li>Maximum extension is 14 days per request</li>
+                <li>Multiple extension requests may affect your reliability score</li>
+                <li>You will be notified once your request is processed</li>
+            </ul>
+        </div>
+    </div>
+</div>
+{% endblock %}

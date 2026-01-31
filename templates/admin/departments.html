@@ -1,0 +1,57 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Departments - Smart Supply{% endblock %}
+{% block page_title %}Departments{% endblock %}
+
+{% block content %}
+<div class="space-y-6 animate-fadeIn">
+    <!-- Header -->
+    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div>
+            <h2 class="text-3xl font-bold tracking-tight text-white">Departments</h2>
+            <p class="text-slate-400 mt-1">Manage organizational departments</p>
+        </div>
+    </div>
+    
+    <!-- Departments Grid -->
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {% for dept in departments %}
+        <div class="bg-white/5 backdrop-blur-lg border border-white/10 rounded-2xl p-6 transition-all duration-200 hover:border-white/20 hover:bg-white/[0.08] hover:shadow-lg hover:shadow-green-500/10 hover:-translate-y-0.5">
+            <div class="flex items-start gap-4">
+                <div class="w-14 h-14 rounded-xl bg-indigo-500/20 flex items-center justify-center flex-shrink-0">
+                    <i data-lucide="building-2" class="w-7 h-7 text-indigo-400"></i>
+                </div>
+                <div class="flex-1">
+                    <div class="flex items-center gap-2">
+                        <span class="font-mono text-sm text-slate-400">{{ dept.code }}</span>
+                        {% if not dept.is_active %}
+                        <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-slate-500/10 text-slate-400 border border-slate-500/30">Inactive</span>
+                        {% endif %}
+                    </div>
+                    <h3 class="font-semibold text-lg text-white">{{ dept.name }}</h3>
+                </div>
+            </div>
+            
+            {% if dept.description %}
+            <p class="text-sm text-slate-400 mt-4">{{ dept.description }}</p>
+            {% endif %}
+            
+            <div class="mt-4 pt-4 border-t border-white/10 flex items-center justify-between text-sm">
+                <span class="text-slate-400">
+                    <span class="font-semibold text-white">{{ dept.user_count }}</span> users
+                </span>
+                <a href="{% url 'users' %}?department={{ dept.id }}" class="text-green-400 hover:text-green-300 transition-colors font-medium">
+                    View Users
+                </a>
+            </div>
+        </div>
+        {% empty %}
+        <div class="col-span-full bg-white/5 border border-white/10 rounded-2xl p-12 text-center">
+            <i data-lucide="building" class="w-16 h-16 text-slate-600 mx-auto mb-4"></i>
+            <h3 class="text-lg font-semibold text-slate-300 mb-2">No departments found</h3>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}

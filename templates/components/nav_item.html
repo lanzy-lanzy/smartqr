@@ -1,0 +1,17 @@
+{% load static %}
+{% comment %}
+Navigation Item Component
+Usage: {% include 'components/nav_item.html' with icon='icon-name' label='Label' url='url_name' %}
+{% endcomment %}
+
+{% with current_url=request.resolver_match.url_name %}
+<a href="{% url url %}" 
+   class="nav-item {% if current_url == url %}active{% endif %}"
+   up-follow
+   up-transition="cross-fade">
+    <i data-lucide="{{ icon }}"></i>
+    <span x-show="sidebarOpen" x-transition:enter="transition ease-out duration-200" x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100">
+        {{ label }}
+    </span>
+</a>
+{% endwith %}

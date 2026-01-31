@@ -1,0 +1,287 @@
+{% extends 'base.html' %}
+
+{% block title %}Import Data - Smart Supply{% endblock %}
+{% block page_title %}Import Data{% endblock %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto space-y-6">
+    <!-- Header -->
+    <div class="flex items-center justify-between">
+        <div>
+            <h2 class="text-3xl font-bold tracking-tight text-white">Import Data</h2>
+            <p class="text-slate-400 text-sm mt-1">Upload CSV files to bulk import supplies and equipment</p>
+        </div>
+    </div>
+
+    <!-- Import Form -->
+    <form method="POST" enctype="multipart/form-data" class="bg-white/5 backdrop-blur-lg border border-white/10 rounded-2xl p-6"
+          x-data="{ 
+              dragOver: false,
+              fileName: '',
+              importType: 'supplies'
+          }">
+        {% csrf_token %}
+        
+        <!-- Import Type Selection -->
+        <div class="mb-8">
+            <label class="block text-sm font-medium text-slate-300 mb-3">Select Import Type</label>
+            <div class="grid grid-cols-2 gap-4">
+                <label class="relative cursor-pointer group">
+                    <input type="radio" name="import_type" value="supplies" x-model="importType" class="peer sr-only" checked>
+                    <div class="bg-white/5 backdrop-blur-lg border-2 border-transparent peer-checked:border-green-500 peer-checked:bg-green-500/5 rounded-xl p-4 transition-all group-hover:bg-white/[0.08]">
+                        <div class="flex items-center gap-4">
+                            <div class="w-12 h-12 rounded-lg bg-green-500/20 flex items-center justify-center">
+                                <i data-lucide="package" class="w-6 h-6 text-green-400"></i>
+                            </div>
+                            <div>
+                                <p class="font-medium text-white">Supplies</p>
+                                <p class="text-sm text-slate-400">Import consumable supplies</p>
+                            </div>
+                        </div>
+                    </div>
+                </label>
+                
+                <label class="relative cursor-pointer group">
+                    <input type="radio" name="import_type" value="equipment" x-model="importType" class="peer sr-only">
+                    <div class="bg-white/5 backdrop-blur-lg border-2 border-transparent peer-checked:border-green-500 peer-checked:bg-green-500/5 rounded-xl p-4 transition-all group-hover:bg-white/[0.08]">
+                        <div class="flex items-center gap-4">
+                            <div class="w-12 h-12 rounded-lg bg-blue-500/20 flex items-center justify-center">
+                                <i data-lucide="monitor" class="w-6 h-6 text-blue-400"></i>
+                            </div>
+                            <div>
+                                <p class="font-medium text-white">Equipment</p>
+                                <p class="text-sm text-slate-400">Import equipment instances</p>
+                            </div>
+                        </div>
+                    </div>
+                </label>
+            </div>
+        </div>
+        
+        <!-- File Upload Area -->
+        <div class="mb-6">
+            <label class="block text-sm font-medium text-slate-300 mb-3">Upload CSV File</label>
+            <div class="relative"
+                 @dragover.prevent="dragOver = true"
+                 @dragleave.prevent="dragOver = false"
+                 @drop.prevent="dragOver = false; fileName = $event.dataTransfer.files[0].name; $refs.fileInput.files = $event.dataTransfer.files">
+                
+                <div class="border-2 border-dashed rounded-xl p-8 text-center transition-all"
+                     :class="dragOver ? 'border-green-500 bg-green-500/10' : 'border-white/20 hover:border-white/40'">
+                    
+                    <input type="file" 
+                           name="file" 
+                           accept=".csv"
+                           x-ref="fileInput"
+                           @change="fileName = $event.target.files[0]?.name || ''"
+                           class="absolute inset-0 w-full h-full opacity-0 cursor-pointer">
+                    
+                    <div x-show="!fileName">
+                        <div class="w-16 h-16 rounded-full bg-slate-800 flex items-center justify-center mx-auto mb-4">
+                            <i data-lucide="upload-cloud" class="w-8 h-8 text-slate-400"></i>
+                        </div>
+                        <p class="font-medium text-white">Drop your CSV file here, or <span class="text-green-400">browse</span></p>
+                        <p class="text-sm text-slate-500 mt-1">Maximum file size: 10MB</p>
+                    </div>
+                    
+                    <div x-show="fileName" class="flex items-center justify-center gap-3">
+                        <i data-lucide="file-text" class="w-6 h-6 text-green-400"></i>
+                        <span class="font-medium text-white" x-text="fileName"></span>
+                        <button type="button" 
+                                @click="fileName = ''; $refs.fileInput.value = ''"
+                                class="p-1 rounded-full hover:bg-white/10 transition-colors">
+                            <i data-lucide="x" class="w-4 h-4 text-slate-400"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Submit Button -->
+        <div class="flex items-center justify-between pt-6 border-t border-white/10">
+            <a href="{% url 'supplies' %}" class="text-sm text-slate-400 hover:text-white transition-colors">
+                Cancel
+            </a>
+            <button type="submit" 
+                    class="px-6 py-2.5 rounded-lg bg-gradient-to-r from-green-600 to-green-500 hover:from-green-500 hover:to-green-400 font-medium transition-all shadow-lg shadow-green-500/20 flex items-center gap-2 text-white">
+                <i data-lucide="upload" class="w-4 h-4"></i>
+                Import Data
+            </button>
+        </div>
+    </form>
+
+    <!-- Download Templates -->
+    <div class="bg-white/5 backdrop-blur-lg border border-white/10 rounded-2xl p-6">
+        <h3 class="text-lg font-semibold text-white mb-4">Download Templates</h3>
+        <p class="text-sm text-slate-400 mb-6">
+            Download CSV templates with the correct column headers to ensure your data imports correctly.
+        </p>
+        
+        <div class="grid md:grid-cols-2 gap-4">
+            <!-- Supplies Template -->
+            <a href="{% url 'import_template' 'supplies' %}" 
+               class="bg-white/5 border border-white/10 backdrop-blur-lg rounded-xl p-4 flex items-center gap-4 hover:bg-white/[0.08] hover:border-white/20 transition-all duration-200 group">
+                <div class="w-12 h-12 rounded-lg bg-green-500/20 flex items-center justify-center group-hover:scale-105 transition-transform">
+                    <i data-lucide="file-spreadsheet" class="w-6 h-6 text-green-400"></i>
+                </div>
+                <div class="flex-1">
+                    <p class="font-medium text-white group-hover:text-green-400 transition-colors">Supplies Template</p>
+                    <p class="text-sm text-slate-400">For importing consumable supplies</p>
+                </div>
+                <i data-lucide="download" class="w-5 h-5 text-slate-400 group-hover:text-white transition-colors"></i>
+            </a>
+            
+            <!-- Equipment Template -->
+            <a href="{% url 'import_template' 'equipment' %}" 
+               class="bg-white/5 border border-white/10 backdrop-blur-lg rounded-xl p-4 flex items-center gap-4 hover:bg-white/[0.08] hover:border-white/20 transition-all duration-200 group">
+                <div class="w-12 h-12 rounded-lg bg-blue-500/20 flex items-center justify-center group-hover:scale-105 transition-transform">
+                    <i data-lucide="file-spreadsheet" class="w-6 h-6 text-blue-400"></i>
+                </div>
+                <div class="flex-1">
+                    <p class="font-medium text-white group-hover:text-green-400 transition-colors">Equipment Template</p>
+                    <p class="text-sm text-slate-400">For importing equipment instances</p>
+                </div>
+                <i data-lucide="download" class="w-5 h-5 text-slate-400 group-hover:text-white transition-colors"></i>
+            </a>
+        </div>
+    </div>
+
+    <!-- Column Reference -->
+    <div class="bg-white/5 backdrop-blur-lg border border-white/10 rounded-2xl p-6" x-data="{ activeTab: 'supplies' }">
+        <h3 class="text-lg font-semibold text-white mb-4">Column Reference</h3>
+        
+        <!-- Tabs -->
+        <div class="flex gap-2 mb-6 border-b border-white/10">
+            <button @click="activeTab = 'supplies'" 
+                    :class="activeTab === 'supplies' ? 'border-b-2 border-green-500 text-white' : 'text-slate-400 hover:text-white'"
+                    class="px-4 py-2 text-sm font-medium transition-colors">
+                Supplies
+            </button>
+            <button @click="activeTab = 'equipment'" 
+                    :class="activeTab === 'equipment' ? 'border-b-2 border-green-500 text-white' : 'text-slate-400 hover:text-white'"
+                    class="px-4 py-2 text-sm font-medium transition-colors">
+                Equipment
+            </button>
+        </div>
+        
+        <!-- Supplies Columns -->
+        <div x-show="activeTab === 'supplies'" class="overflow-x-auto">
+            <table class="w-full text-sm">
+                <thead>
+                    <tr class="border-b border-white/10">
+                        <th class="text-left py-3 px-4 font-medium text-slate-400">Column</th>
+                        <th class="text-left py-3 px-4 font-medium text-slate-400">Required</th>
+                        <th class="text-left py-3 px-4 font-medium text-slate-400">Description</th>
+                        <th class="text-left py-3 px-4 font-medium text-slate-400">Example</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-white/5">
+                    <tr class="hover:bg-white/[0.02]">
+                        <td class="py-3 px-4"><code class="text-green-400">name</code></td>
+                        <td class="py-3 px-4"><span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-red-500/10 text-red-400 border border-red-500/30">Yes</span></td>
+                        <td class="py-3 px-4 text-slate-400">Supply item name</td>
+                        <td class="py-3 px-4 text-slate-500">A4 Bond Paper</td>
+                    </tr>
+                    <tr class="hover:bg-white/[0.02]">
+                        <td class="py-3 px-4"><code class="text-green-400">category</code></td>
+                        <td class="py-3 px-4"><span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-red-500/10 text-red-400 border border-red-500/30">Yes</span></td>
+                        <td class="py-3 px-4 text-slate-400">Category name (must exist)</td>
+                        <td class="py-3 px-4 text-slate-500">Office Supplies</td>
+                    </tr>
+                    <tr class="hover:bg-white/[0.02]">
+                        <td class="py-3 px-4"><code class="text-green-400">quantity</code></td>
+                        <td class="py-3 px-4"><span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-red-500/10 text-red-400 border border-red-500/30">Yes</span></td>
+                        <td class="py-3 px-4 text-slate-400">Current stock quantity</td>
+                        <td class="py-3 px-4 text-slate-500">100</td>
+                    </tr>
+                    <tr class="hover:bg-white/[0.02]">
+                        <td class="py-3 px-4"><code class="text-green-400">min_stock_level</code></td>
+                        <td class="py-3 px-4"><span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-amber-500/10 text-amber-400 border border-amber-500/30">No</span></td>
+                        <td class="py-3 px-4 text-slate-400">Low stock alert threshold</td>
+                        <td class="py-3 px-4 text-slate-500">10</td>
+                    </tr>
+                    <tr class="hover:bg-white/[0.02]">
+                        <td class="py-3 px-4"><code class="text-green-400">unit</code></td>
+                        <td class="py-3 px-4"><span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-amber-500/10 text-amber-400 border border-amber-500/30">No</span></td>
+                        <td class="py-3 px-4 text-slate-400">Unit of measurement</td>
+                        <td class="py-3 px-4 text-slate-500">ream, pcs, box</td>
+                    </tr>
+                    <tr class="hover:bg-white/[0.02]">
+                        <td class="py-3 px-4"><code class="text-green-400">description</code></td>
+                        <td class="py-3 px-4"><span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-amber-500/10 text-amber-400 border border-amber-500/30">No</span></td>
+                        <td class="py-3 px-4 text-slate-400">Item description</td>
+                        <td class="py-3 px-4 text-slate-500">70gsm white paper</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+        
+        <!-- Equipment Columns -->
+        <div x-show="activeTab === 'equipment'" class="overflow-x-auto">
+            <table class="w-full text-sm">
+                <thead>
+                    <tr class="border-b border-white/10">
+                        <th class="text-left py-3 px-4 font-medium text-slate-400">Column</th>
+                        <th class="text-left py-3 px-4 font-medium text-slate-400">Required</th>
+                        <th class="text-left py-3 px-4 font-medium text-slate-400">Description</th>
+                        <th class="text-left py-3 px-4 font-medium text-slate-400">Example</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-white/5">
+                    <tr class="hover:bg-white/[0.02]">
+                        <td class="py-3 px-4"><code class="text-green-400">instance_code</code></td>
+                        <td class="py-3 px-4"><span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-red-500/10 text-red-400 border border-red-500/30">Yes</span></td>
+                        <td class="py-3 px-4 text-slate-400">Unique equipment code</td>
+                        <td class="py-3 px-4 text-slate-500">LAPTOP-001</td>
+                    </tr>
+                    <tr class="hover:bg-white/[0.02]">
+                        <td class="py-3 px-4"><code class="text-green-400">supply_name</code></td>
+                        <td class="py-3 px-4"><span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-red-500/10 text-red-400 border border-red-500/30">Yes</span></td>
+                        <td class="py-3 px-4 text-slate-400">Parent supply name (must exist)</td>
+                        <td class="py-3 px-4 text-slate-500">ThinkPad L14</td>
+                    </tr>
+                    <tr class="hover:bg-white/[0.02]">
+                        <td class="py-3 px-4"><code class="text-green-400">serial_number</code></td>
+                        <td class="py-3 px-4"><span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-amber-500/10 text-amber-400 border border-amber-500/30">No</span></td>
+                        <td class="py-3 px-4 text-slate-400">Manufacturer serial</td>
+                        <td class="py-3 px-4 text-slate-500">PF-1234567</td>
+                    </tr>
+                    <tr class="hover:bg-white/[0.02]">
+                        <td class="py-3 px-4"><code class="text-green-400">status</code></td>
+                        <td class="py-3 px-4"><span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-amber-500/10 text-amber-400 border border-amber-500/30">No</span></td>
+                        <td class="py-3 px-4 text-slate-400">Current status</td>
+                        <td class="py-3 px-4 text-slate-500">available, borrowed, maintenance</td>
+                    </tr>
+                    <tr class="hover:bg-white/[0.02]">
+                        <td class="py-3 px-4"><code class="text-green-400">acquired_date</code></td>
+                        <td class="py-3 px-4"><span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-amber-500/10 text-amber-400 border border-amber-500/30">No</span></td>
+                        <td class="py-3 px-4 text-slate-400">Date acquired (YYYY-MM-DD)</td>
+                        <td class="py-3 px-4 text-slate-500">2024-01-15</td>
+                    </tr>
+                    <tr class="hover:bg-white/[0.02]">
+                        <td class="py-3 px-4"><code class="text-green-400">condition_notes</code></td>
+                        <td class="py-3 px-4"><span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-amber-500/10 text-amber-400 border border-amber-500/30">No</span></td>
+                        <td class="py-3 px-4 text-slate-400">Notes about condition</td>
+                        <td class="py-3 px-4 text-slate-500">Good condition</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Tips Box -->
+    <div class="bg-white/5 backdrop-blur-lg border-l-4 border-l-amber-500 border border-white/10 rounded-xl p-4 flex items-start gap-3">
+        <i data-lucide="lightbulb" class="w-5 h-5 text-amber-400 flex-shrink-0 mt-0.5"></i>
+        <div class="text-sm text-slate-300">
+            <p class="font-medium text-white mb-1">Import Tips</p>
+            <ul class="list-disc list-inside space-y-1 text-slate-400">
+                <li>Ensure categories and parent supplies exist before importing</li>
+                <li>Use UTF-8 encoding for your CSV files</li>
+                <li>Instance codes must be unique across the system</li>
+                <li>Check for duplicate entries before importing</li>
+                <li>Back up your data before performing large imports</li>
+            </ul>
+        </div>
+    </div>
+</div>
+{% endblock %}
