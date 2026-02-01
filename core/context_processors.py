@@ -66,3 +66,20 @@ def user_permissions(request):
         'can_approve_requests': is_gso_or_admin,
         'can_manage_users': request.user.role == User.Role.ADMIN,
     }
+
+
+def pending_requests_count(request):
+    """
+    Add count of pending requests to all templates.
+    """
+    if not request.user.is_authenticated:
+        return {'pending_requests_count': 0}
+    
+    from .models import SupplyRequest, User
+    
+    # Only GSO staff or Admin should see this count usually
+    if request.user.role in [User.Role.GSO_STAFF, User.Role.ADMIN]:
+        count = SupplyRequest.objects.filter(status=SupplyRequest.Status.PENDING).count()
+        return {'pending_requests_count': count}
+    
+    return {'pending_requests_count': 0}

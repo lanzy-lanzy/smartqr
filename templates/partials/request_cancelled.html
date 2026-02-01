@@ -1,0 +1,10 @@
+<!-- Partial: Request cancelled message -->
+<div class="p-4 bg-slate-500/10 border border-white/10 rounded-xl flex items-center gap-3 fade-in">
+    <div class="w-10 h-10 rounded-full bg-slate-500/20 flex items-center justify-center">
+        <i data-lucide="x-circle" class="w-5 h-5 text-slate-400"></i>
+    </div>
+    <div>
+        <p class="font-medium text-slate-300">Request Cancelled</p>
+        <p class="text-sm text-slate-400/70">{{ request.request_code }} - {{ request.supply.name }}</p>
+    </div>
+</div>

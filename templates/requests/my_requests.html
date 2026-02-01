@@ -139,7 +139,7 @@
                 </div>
                 
                 <!-- Actions -->
-                <div class="flex lg:flex-col gap-2">
+                <div class="flex lg:flex-col gap-2" id="request-actions-{{ req.id }}">
                     {% if req.is_batch %}
                     <a href="{% url 'batch_request_detail' req.batch_group_id %}" 
                        class="inline-flex items-center justify-center gap-2 px-4 py-2.5 text-sm rounded-xl font-bold transition-all duration-200 cursor-pointer bg-indigo-600 hover:bg-indigo-500 text-white shadow-lg shadow-indigo-600/20 flex-1 lg:flex-none"
@@ -162,6 +162,17 @@
                              up-href="{% if req.is_batch %}{% url 'batch_request_detail' req.batch_group_id %}{% else %}{% url 'request_qr' req.id %}{% endif %}">
                          <i data-lucide="qr-code" class="w-4 h-4"></i>
                          <span class="lg:hidden">QR</span>
+                     </button>
+                     {% endif %}
+
+                     {% if req.status == 'pending' %}
+                     <button hx-post="{% url 'cancel_request' req.id %}"
+                             hx-target="closest .bg-white\/5"
+                             hx-swap="outerHTML"
+                             hx-confirm="Are you sure you want to cancel this request?"
+                             class="inline-flex items-center justify-center gap-2 px-3 py-1.5 text-xs rounded-lg font-medium transition-all duration-200 cursor-pointer bg-red-500/10 border border-red-500/20 text-red-400 hover:bg-red-500/20 flex-1 lg:flex-none">
+                         <i data-lucide="trash-2" class="w-4 h-4"></i>
+                         <span>Cancel</span>
                      </button>
                      {% endif %}
                 </div>

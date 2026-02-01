@@ -551,6 +551,31 @@ def pending_requests(request):
 
 
 @login_required
+def export_pending_requests(request):
+    """Export pending requests to CSV."""
+    from .bulk import export_requests_csv
+    
+    if request.user.role not in [User.Role.ADMIN, User.Role.GSO_STAFF]:
+        messages.error(request, 'Access denied.')
+        return redirect('dashboard')
+    
+    priority = request.GET.get('priority')
+    department = request.GET.get('department')
+    
+    requests_qs = SupplyRequest.objects.filter(
+        status=SupplyRequest.Status.PENDING
+    ).select_related('requester', 'supply', 'requester__department').order_by('-priority', '-requested_at')
+    
+    if priority:
+        requests_qs = requests_qs.filter(priority=priority)
+    
+    if department:
+        requests_qs = requests_qs.filter(requester__department_id=department)
+    
+    return export_requests_csv(requests_qs)
+
+
+@login_required
 @require_POST
 def approve_request(request, pk):
     """Approve a pending request."""
@@ -610,6 +635,27 @@ def reject_request(request, pk):
     
     messages.success(request, f'Request {supply_request.request_code} rejected.')
     return redirect('pending_requests')
+
+
+@login_required
+@require_POST
+def cancel_request(request, pk):
+    """Cancel a pending request by the requester."""
+    supply_request = get_object_or_404(SupplyRequest, pk=pk, status=SupplyRequest.Status.PENDING)
+    
+    # Check if the user is the requester or an admin/gso_staff
+    if supply_request.requester != request.user and request.user.role not in [User.Role.ADMIN, User.Role.GSO_STAFF]:
+        return JsonResponse({'error': 'Access denied'}, status=403)
+    
+    supply_request.cancel()
+    
+    if request.headers.get('HX-Request') or request.headers.get('X-Up-Target'):
+        response = render(request, 'partials/request_cancelled.html', {'request': supply_request})
+        response['HX-Trigger'] = json.dumps({'refreshRequests': True})
+        return response
+    
+    messages.success(request, f'Request {supply_request.request_code} cancelled.')
+    return redirect('my_requests')
 
 
 # =============================================================================

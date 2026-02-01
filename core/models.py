@@ -676,6 +676,11 @@ class SupplyRequest(models.Model):
         self.review_notes = notes
         self.save()
 
+    def cancel(self):
+        """Cancel this request."""
+        self.status = self.Status.CANCELLED
+        self.save()
+
 
 class BorrowedItem(models.Model):
     """

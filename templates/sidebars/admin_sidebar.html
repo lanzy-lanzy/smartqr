@@ -30,10 +30,20 @@
             
             <!-- Pending Requests -->
             <a href="{% url 'pending_requests' %}" up-target="main" up-follow
-               class="flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-200"
+               class="flex items-center justify-between px-3 py-2.5 rounded-xl transition-all duration-200"
                :class="currentUrl.startsWith('{% url 'pending_requests' %}') ? 'bg-red-500/20 text-red-300' : 'text-slate-400 hover:bg-white/5 hover:text-white'">
-                <i data-lucide="clock" class="w-5 h-5"></i>
-                <span class="text-sm font-semibold transition-opacity" :class="sidebarOpen ? 'opacity-100' : 'opacity-0 lg:hidden'">Pending Requests</span>
+                <div class="flex items-center gap-3">
+                    <i data-lucide="clock" class="w-5 h-5"></i>
+                    <span class="text-sm font-semibold transition-opacity" :class="sidebarOpen ? 'opacity-100' : 'opacity-0 lg:hidden'">Pending Requests</span>
+                </div>
+                {% if pending_requests_count > 0 %}
+                <span class="flex h-5 min-w-[20px] items-center justify-center rounded-full bg-red-500 px-1 text-[10px] font-bold text-white shadow-lg shadow-red-500/40 animate-pulse"
+                      x-show="sidebarOpen">
+                    {{ pending_requests_count }}
+                </span>
+                <div class="absolute right-2 top-2 h-2 w-2 rounded-full bg-red-500 shadow-sm shadow-red-500/50" 
+                     x-show="!sidebarOpen" :class="sidebarOpen ? 'hidden' : 'lg:block'"></div>
+                {% endif %}
             </a>
             
             <!-- Returns -->

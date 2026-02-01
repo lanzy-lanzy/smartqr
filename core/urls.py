@@ -27,8 +27,10 @@ urlpatterns = [
     
     # Requests - GSO Staff
     path('requests/pending/', views.pending_requests, name='pending_requests'),
+    path('requests/pending/export/', views.export_pending_requests, name='export_pending_requests'),
     path('requests/<int:pk>/approve/', views.approve_request, name='approve_request'),
     path('requests/<int:pk>/reject/', views.reject_request, name='reject_request'),
+    path('requests/<int:pk>/cancel/', views.cancel_request, name='cancel_request'),
     path('requests/batch-approve/', views.batch_approve_requests_view, name='batch_approve_requests'),
     path('requests/batch-reject/', views.batch_reject_requests_view, name='batch_reject_requests'),
     
