@@ -1,0 +1,168 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{{ title }} - Smart Supply{% endblock %}
+{% block page_title %}{{ title }}{% endblock %}
+
+{% block content %}
+<div class="max-w-3xl mx-auto fade-in">
+    <!-- Back Button -->
+    <a href="{% if supply %}{% url 'supply_detail' supply.pk %}{% else %}{% url 'supplies' %}{% endif %}" up-follow class="inline-flex items-center gap-2 text-slate-400 hover:text-white transition-colors mb-6 group">
+        <i data-lucide="arrow-left" class="w-5 h-5 group-hover:-translate-x-1 transition-transform"></i>
+        <span>Back to {% if supply %}Details{% else %}Supplies{% endif %}</span>
+    </a>
+
+    <div class="rounded-3xl border border-white/10 bg-gradient-to-br from-white/5 to-white/[0.02] backdrop-blur-xl overflow-hidden shadow-2xl">
+        <div class="p-8 border-b border-white/10">
+            <h2 class="heading-md flex items-center gap-3">
+                <i data-lucide="{% if supply %}edit-3{% else %}plus-circle{% endif %}" class="w-6 h-6 text-primary-400"></i>
+                {{ title }}
+            </h2>
+            <p class="text-slate-400 mt-2">{% if supply %}Update the details of {{ supply.name }}{% else %}Register a new item in the inventory.{% endif %}</p>
+        </div>
+
+        <form method="POST" enctype="multipart/form-data" class="p-8 space-y-6" 
+              x-data="{ 
+                name: '{{ supply.name|default:'' }}',
+                category: '{{ supply.category_id|default:'' }}',
+                unit: '{{ supply.unit|default:'pcs' }}',
+                minStock: {{ supply.min_stock_level|default:5 }},
+                description: `{{ supply.description|default:'' }}`,
+                isConsumable: {% if supply.is_consumable or not supply %}true{% else %}false{% endif %},
+                isSuggesting: false,
+                async suggestDetails() {
+                    if (!this.name) {
+                        alert('Please enter an item name first.');
+                        return;
+                    }
+                    this.isSuggesting = true;
+                    try {
+                        const response = await fetch(`/api/v1/ai/suggest-supply/?name=${encodeURIComponent(this.name)}`);
+                        const result = await response.json();
+                        if (result.data) {
+                            if (result.data.corrected_name) {
+                                this.name = result.data.corrected_name;
+                            }
+                            this.description = result.data.description;
+                            this.category = result.data.category_id;
+                            this.unit = result.data.unit;
+                            this.minStock = result.data.min_stock_level;
+                            // Only update isConsumable on creation
+                            {% if not supply %}
+                            this.isConsumable = result.data.is_consumable;
+                            {% endif %}
+                        } else if (result.error) {
+                            alert('AI Error: ' + result.error);
+                        }
+                    } catch (e) {
+                        alert('Error connecting to AI service.');
+                    } finally {
+                        this.isSuggesting = false;
+                    }
+                }
+              }">
+            {% csrf_token %}
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <!-- Name -->
+                <div class="space-y-2 md:col-span-2">
+                    <label for="name" class="block text-sm font-semibold text-slate-300">Item Name</label>
+                    <div class="flex gap-2">
+                        <input type="text" name="name" id="name" required x-model="name"
+                               class="flex-1 px-4 py-3 rounded-xl bg-white/5 border border-white/10 focus:border-primary-500/50 text-white transition-all focus:outline-none focus:ring-2 focus:ring-primary-500/20"
+                               placeholder="e.g., ThinkPad L14 or A4 Paper Bundle">
+                        <button type="button" @click="suggestDetails()" :disabled="isSuggesting"
+                                class="px-4 py-3 rounded-xl bg-primary-500/10 border border-primary-500/30 text-primary-400 hover:bg-primary-500/20 transition-all flex items-center gap-2 whitespace-nowrap disabled:opacity-50">
+                            <i data-lucide="sparkles" class="w-4 h-4" :class="isSuggesting ? 'animate-pulse' : ''"></i>
+                            <span x-text="isSuggesting ? 'Thinking...' : 'AI Suggest'"></span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Category -->
+                <div class="space-y-2">
+                    <label for="category" class="block text-sm font-semibold text-slate-300">Category</label>
+                    <select name="category" id="category" required x-model="category"
+                            class="select w-full px-4 py-3 rounded-xl bg-white/5 border border-white/10 focus:border-primary-500/50 text-white transition-all focus:outline-none focus:ring-2 focus:ring-primary-500/20">
+                        <option value="">Select Category</option>
+                        {% for cat in categories %}
+                        <option value="{{ cat.id }}">{{ cat.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <!-- Unit -->
+                <div class="space-y-2">
+                    <label for="unit" class="block text-sm font-semibold text-slate-300">Unit of Measurement</label>
+                    <input type="text" name="unit" id="unit" required x-model="unit"
+                           class="w-full px-4 py-3 rounded-xl bg-white/5 border border-white/10 focus:border-primary-500/50 text-white transition-all focus:outline-none focus:ring-2 focus:ring-primary-500/20"
+                           placeholder="e.g., pcs, reams, boxes">
+                </div>
+
+                <!-- Min Stock Level -->
+                <div class="space-y-2">
+                    <label for="min_stock_level" class="block text-sm font-semibold text-slate-300">Min. Stock Level (Alert)</label>
+                    <input type="number" name="min_stock_level" id="min_stock_level" required x-model="minStock"
+                           class="w-full px-4 py-3 rounded-xl bg-white/5 border border-white/10 focus:border-primary-500/50 text-white transition-all focus:outline-none focus:ring-2 focus:ring-primary-500/20">
+                </div>
+
+                <!-- Type Toggle (Only on creation) -->
+                {% if not supply %}
+                <div class="space-y-2">
+                    <label class="block text-sm font-semibold text-slate-300">Type</label>
+                    <div class="flex items-center gap-4 py-3">
+                        <label class="flex items-center gap-2 cursor-pointer">
+                            <input type="radio" name="is_consumable" value="off" :checked="!isConsumable" @change="isConsumable = false" class="hidden">
+                            <div class="px-4 py-2 rounded-lg border transition-all" :class="!isConsumable ? 'bg-primary-500/20 border-primary-500 text-white' : 'bg-white/5 border-white/10 text-slate-400'">
+                                Equipment
+                            </div>
+                        </label>
+                        <label class="flex items-center gap-2 cursor-pointer">
+                            <input type="radio" name="is_consumable" value="on" :checked="isConsumable" @change="isConsumable = true" class="hidden">
+                            <div class="px-4 py-2 rounded-lg border transition-all" :class="isConsumable ? 'bg-primary-500/20 border-primary-500 text-white' : 'bg-white/5 border-white/10 text-slate-400'">
+                                Consumable
+                            </div>
+                        </label>
+                    </div>
+                </div>
+
+                <!-- Initial Quantity (Only for consumables) -->
+                <div class="space-y-2" x-show="isConsumable" x-transition>
+                    <label for="quantity" class="block text-sm font-semibold text-slate-300">Initial Stock Quantity</label>
+                    <input type="number" name="quantity" id="quantity" value="0"
+                           class="w-full px-4 py-3 rounded-xl bg-white/5 border border-white/10 focus:border-primary-500/50 text-white transition-all focus:outline-none focus:ring-2 focus:ring-primary-500/20">
+                    <p class="text-xs text-slate-500">For equipment, instances are added separately.</p>
+                </div>
+                {% endif %}
+
+                <!-- Description -->
+                <div class="space-y-2 md:col-span-2">
+                    <label for="description" class="block text-sm font-semibold text-slate-300">Description</label>
+                    <textarea name="description" id="description" rows="3" x-model="description"
+                              class="w-full px-4 py-3 rounded-xl bg-white/5 border border-white/10 focus:border-primary-500/50 text-white transition-all focus:outline-none focus:ring-2 focus:ring-primary-500/20"
+                              placeholder="Describe the item, features, or storage location..."></textarea>
+                </div>
+            </div>
+
+            <!-- Submit Buttons -->
+            <div class="flex items-center justify-end gap-4 pt-6 border-t border-white/10">
+                <a href="{% if supply %}{% url 'supply_detail' supply.pk %}{% else %}{% url 'supplies' %}{% endif %}" up-follow
+                   class="px-6 py-3 rounded-xl bg-white/5 border border-white/10 text-slate-300 font-semibold hover:bg-white/10 transition-all">
+                    Cancel
+                </a>
+                <button type="submit"
+                        class="px-8 py-3 rounded-xl bg-gradient-to-r from-primary-600 to-primary-500 hover:from-primary-500 hover:to-primary-400 text-white font-bold transition-all shadow-lg hover:shadow-primary-500/30">
+                    {% if supply %}Save Changes{% else %}Create Supply{% endif %}
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+    // Re-initialize Lucide icons after Unpoly page swap
+    document.addEventListener('up:fragment:inserted', () => {
+        if (window.lucide) lucide.createIcons();
+    });
+</script>
+{% endblock %}

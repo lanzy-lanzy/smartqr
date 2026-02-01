@@ -160,7 +160,7 @@ def generate_inventory_report(supplies, filename="inventory_report.pdf"):
         data.append([
             supply.name[:30],
             supply.category.name[:20],
-            str(supply.quantity),
+            str(supply.total_quantity),
             str(supply.min_stock_level),
             status,
             supply.unit,

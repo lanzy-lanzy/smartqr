@@ -8,6 +8,8 @@ For full REST API capabilities, consider using Django REST Framework.
 import json
 from functools import wraps
 from datetime import datetime, timedelta
+from django.conf import settings
+import google.generativeai as genai
 
 from django.http import JsonResponse
 from django.views.decorators.http import require_http_methods
@@ -610,6 +612,175 @@ def api_stats(request):
     }
     
     return JsonResponse({'data': stats})
+
+
+# =============================================================================
+# AI Assistant Endpoints
+# =============================================================================
+
+@csrf_exempt
+@require_http_methods(["GET"])
+@api_staff_required
+def api_ai_suggest_supply(request):
+    """
+    GET /api/v1/ai/suggest-supply/?name=...
+    
+    Uses Gemini AI to suggest details for a supply based on its name.
+    """
+    name = request.GET.get('name')
+    if not name:
+        return JsonResponse({'error': 'Name parameter is required'}, status=400)
+    
+    if not settings.GOOGLE_API_KEY:
+        return JsonResponse({'error': 'Gemini API key not configured'}, status=503)
+    
+    try:
+        genai.configure(api_key=settings.GOOGLE_API_KEY)
+        model = genai.GenerativeModel(settings.GEMINI_MODEL)
+        
+        # Get existing categories to help the AI map to one
+        categories = list(SupplyCategory.objects.filter(is_active=True).values('id', 'name', 'is_material'))
+        categories_str = ", ".join([f"{c['name']} (ID: {c['id']}, {'Equipment' if c['is_material'] else 'Consumable'})" for c in categories])
+        
+        prompt = f"""
+        Suggest details for an inventory item named "{name}".
+        Available categories: {categories_str}
+        
+        Return the result ONLY as a JSON object with these fields:
+        - corrected_name: A standardized, professional name for the item (e.g., "thinkpad l14" -> "Lenovo ThinkPad L14").
+        - description: A concise professional description (1-2 sentences).
+        - category_id: Choose the most appropriate ID from the provided categories.
+        - unit: The standard unit of measurement (e.g., piece, box, set, unit).
+        - min_stock_level: Suggested minimum stock level (an integer).
+        - is_consumable: Boolean (true if it's used up like paper/ink, false if it's durable like a laptop).
+        
+        Example:
+        {{"corrected_name": "HP LaserJet Pro M404n", "description": "High-performance monochrome laser printer for office use.", "category_id": 2, "unit": "unit", "min_stock_level": 2, "is_consumable": false}}
+        """
+        
+        response = model.generate_content(prompt)
+        # Clean response text in case it includes markdown code blocks
+        text = response.text.replace('```json', '').replace('```', '').strip()
+        data = json.loads(text)
+        
+        return JsonResponse({'data': data})
+        
+    except Exception as e:
+        return JsonResponse({'error': str(e)}, status=500)
+
+
+@csrf_exempt
+@require_http_methods(["GET"])
+@api_staff_required
+def api_ai_suggest_prefix(request):
+    """
+    GET /api/v1/ai/suggest-prefix/?name=...
+    
+    Uses Gemini AI to suggest a professional instance code prefix based on supply name.
+    """
+    name = request.GET.get('name')
+    if not name:
+        return JsonResponse({'error': 'Name parameter is required'}, status=400)
+    
+    if not settings.GOOGLE_API_KEY:
+        return JsonResponse({'error': 'Gemini API key not configured'}, status=503)
+    
+    try:
+        genai.configure(api_key=settings.GOOGLE_API_KEY)
+        model = genai.GenerativeModel(settings.GEMINI_MODEL)
+        
+        prompt = f"""
+        Suggest a professional 3-4 letter shorthand prefix for inventory tracking of "{name}".
+        Example: "ThinkPad L14" -> "LPT" or "TPL"
+        Return ONLY the prefix in uppercase.
+        """
+        
+        response = model.generate_content(prompt)
+        prefix = response.text.strip().upper()[:5]
+        
+        return JsonResponse({'data': {'prefix': prefix}})
+        
+    except Exception as e:
+        return JsonResponse({'error': str(e)}, status=500)
+
+
+@csrf_exempt
+@require_http_methods(["GET"])
+@api_staff_required
+def api_ai_suggest_serials(request):
+    """
+    GET /api/v1/ai/suggest-serials/?name=...&count=10
+    
+    Uses Gemini AI to suggest realistic test serial numbers for a given equipment name.
+    """
+    name = request.GET.get('name')
+    count = request.GET.get('count', 10)
+    
+    if not name:
+        return JsonResponse({'error': 'Name parameter is required'}, status=400)
+    
+    if not settings.GOOGLE_API_KEY:
+        return JsonResponse({'error': 'Gemini API key not configured'}, status=503)
+    
+    try:
+        genai.configure(api_key=settings.GOOGLE_API_KEY)
+        model = genai.GenerativeModel(settings.GEMINI_MODEL)
+        
+        prompt = f"""
+        Generate {count} realistic but fake test serial numbers for equipment named "{name}".
+        Return ONLY the serial numbers, one per line.
+        """
+        
+        response = model.generate_content(prompt)
+        content = response.text.strip()
+        serials = [s.strip() for s in content.split('\n') if s.strip()]
+        
+        return JsonResponse({'data': {'serials': serials}})
+        
+    except Exception as e:
+        return JsonResponse({'error': str(e)}, status=500)
+
+
+@csrf_exempt
+@require_http_methods(["GET"])
+@api_staff_required
+def api_ai_suggest_category(request):
+    """
+    GET /api/v1/ai/suggest-category/?name=...
+    
+    Uses Gemini AI to suggest category details: icon, description, and type.
+    """
+    name = request.GET.get('name')
+    if not name:
+        return JsonResponse({'error': 'Name parameter is required'}, status=400)
+    
+    if not settings.GOOGLE_API_KEY:
+        return JsonResponse({'error': 'Gemini API key not configured'}, status=503)
+    
+    try:
+        genai.configure(api_key=settings.GOOGLE_API_KEY)
+        model = genai.GenerativeModel(settings.GEMINI_MODEL)
+        
+        prompt = f"""
+        Suggest details for an inventory category named "{name}".
+        
+        Return the result ONLY as a JSON object with these fields:
+        - icon: A standard Lucide icon name that fits this category (e.g., monitor, printer, package, hard-drive, cpu, mouse, keyboard, briefcase, tool, coffee).
+        - description: A concise professional description (1-2 sentences).
+        - is_material: Boolean (true if it contains durable equipment to be borrowed/returned, false if it contains consumables).
+        
+        Example for "IT Equipment":
+        {{"icon": "monitor", "description": "Laptops, desktops, monitors, and other computing hardware.", "is_material": true}}
+        """
+        
+        response = model.generate_content(prompt)
+        text = response.text.replace('```json', '').replace('```', '').strip()
+        data = json.loads(text)
+        
+        return JsonResponse({'data': data})
+        
+    except Exception as e:
+        return JsonResponse({'error': str(e)}, status=500)
 
 
 # Import models for F expression

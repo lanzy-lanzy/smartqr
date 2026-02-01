@@ -277,19 +277,27 @@ class Supply(models.Model):
     @property
     def stock_status(self):
         """Calculate current stock status."""
-        if self.quantity == 0:
+        available = self.available_quantity
+        if available == 0:
             return self.StockStatus.OUT_OF_STOCK
-        elif self.quantity <= self.min_stock_level:
+        elif available <= self.min_stock_level:
             return self.StockStatus.LOW_STOCK
         return self.StockStatus.IN_STOCK
 
     @property
     def is_low_stock(self):
-        return self.quantity <= self.min_stock_level
+        return self.available_quantity <= self.min_stock_level
 
     @property
     def is_out_of_stock(self):
-        return self.quantity == 0
+        return self.available_quantity == 0
+
+    @property
+    def total_quantity(self):
+        """For equipment, count all instances. For consumables, use quantity."""
+        if not self.is_consumable and self.category.is_material:
+            return self.instances.count()
+        return self.quantity
 
     @property
     def available_quantity(self):

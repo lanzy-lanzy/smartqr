@@ -1,5 +1,5 @@
 {% if supplies %}
-<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
+<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
     {% for supply in supplies %}
     {% include 'components/supply_card.html' with supply=supply %}
     {% endfor %}
@@ -7,45 +7,43 @@
 
 <!-- Pagination -->
 {% if supplies.has_other_pages %}
-<div class="mt-10 flex flex-col sm:flex-row items-center justify-center gap-4">
+<div class="mt-8 flex flex-col sm:flex-row items-center justify-center gap-3">
     {% if supplies.has_previous %}
     <a href="?page={{ supplies.previous_page_number }}" 
-       class="inline-flex items-center gap-2 px-5 py-3 rounded-xl bg-gradient-to-r from-white/10 to-white/5 border border-white/10 hover:border-primary-500/50 text-white font-medium transition-all duration-300 hover:shadow-lg hover:shadow-primary-500/10"
+       class="inline-flex items-center gap-2 px-4 py-2.5 rounded-lg border border-slate-800 text-slate-300 hover:border-slate-700 hover:bg-slate-900/50 font-medium transition-all text-sm"
        hx-get="{% url 'supplies' %}?page={{ supplies.previous_page_number }}"
        hx-target="#supply-grid">
-        <i data-lucide="chevron-left" class="w-4 h-4"></i>
-        Previous
-    </a>
+         <i data-lucide="chevron-left" class="w-4 h-4"></i>
+         Previous
+     </a>
     {% endif %}
     
     <!-- Page Info -->
-    <div class="px-6 py-3 rounded-xl bg-white/5 border border-white/10">
-        <p class="text-sm font-medium text-white">
-            Page <span class="text-primary-400 font-bold">{{ supplies.number }}</span> of 
-            <span class="text-primary-400 font-bold">{{ supplies.paginator.num_pages }}</span>
+    <div class="px-4 py-2.5 rounded-lg border border-slate-800 text-sm">
+        <p class="text-slate-300">
+            Page <span class="font-semibold text-white">{{ supplies.number }}</span> of 
+            <span class="font-semibold text-white">{{ supplies.paginator.num_pages }}</span>
         </p>
     </div>
     
     {% if supplies.has_next %}
     <a href="?page={{ supplies.next_page_number }}" 
-       class="inline-flex items-center gap-2 px-5 py-3 rounded-xl bg-gradient-to-r from-primary-600 to-primary-500 hover:from-primary-500 hover:to-primary-400 text-white font-medium transition-all duration-300 hover:shadow-lg hover:shadow-primary-500/30"
+       class="inline-flex items-center gap-2 px-4 py-2.5 rounded-lg bg-primary-600 hover:bg-primary-700 text-white font-medium transition-all text-sm"
        hx-get="{% url 'supplies' %}?page={{ supplies.next_page_number }}"
        hx-target="#supply-grid">
-        Next
-        <i data-lucide="chevron-right" class="w-4 h-4"></i>
-    </a>
+         Next
+         <i data-lucide="chevron-right" class="w-4 h-4"></i>
+     </a>
     {% endif %}
 </div>
 {% endif %}
 
 {% else %}
-<div class="rounded-2xl border-2 border-dashed border-white/20 bg-white/5 backdrop-blur-xl p-12 text-center">
-    <div class="inline-flex items-center justify-center w-16 h-16 rounded-full bg-slate-700/50 mb-4 mx-auto">
-        <i data-lucide="package-x" class="w-8 h-8 text-slate-500"></i>
-    </div>
-    <h3 class="heading-sm text-slate-300 mb-2">No supplies found</h3>
-    <p class="text-slate-500 mb-6">Try adjusting your search or filters</p>
-    <a href="{% url 'supplies' %}" class="inline-flex items-center gap-2 px-4 py-2 bg-primary-600 hover:bg-primary-500 text-white font-medium rounded-lg transition-colors">
+<div class="rounded-lg border border-dashed border-slate-800 bg-slate-950/50 p-12 text-center">
+    <i data-lucide="package-x" class="w-12 h-12 text-slate-700 mx-auto mb-4"></i>
+    <h3 class="text-lg font-medium text-slate-300 mb-2">No supplies found</h3>
+    <p class="text-slate-500 text-sm mb-6">Try adjusting your search or filters</p>
+    <a href="{% url 'supplies' %}" class="inline-flex items-center gap-2 px-4 py-2.5 bg-primary-600 hover:bg-primary-700 text-white text-sm font-medium rounded-lg transition-all">
         <i data-lucide="refresh-cw" class="w-4 h-4"></i>
         Reset Filters
     </a>

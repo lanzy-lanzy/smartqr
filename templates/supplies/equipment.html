@@ -18,7 +18,15 @@
                     <p class="text-sm text-slate-400">Track individual equipment units and their status</p>
                 </div>
             </div>
-            <div class="flex items-center gap-2">
+            <div class="flex items-center gap-3">
+                {% if user.role == 'admin' or user.role == 'gso_staff' %}
+                <a href="{% url 'instance_create' %}" up-follow class="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-white/5 border border-white/10 hover:bg-white/10 text-white font-semibold transition-all duration-300 whitespace-nowrap">
+                    <i data-lucide="plus-circle" class="w-4 h-4 text-primary-400"></i>
+                    Add Unit
+                </a>
+                {% endif %}
+                
+                <div class="flex items-center gap-2">
                 <div class="px-3 py-2 bg-slate-700/50 rounded-lg border border-slate-600/50">
                     <p class="text-xs text-slate-400">Total</p>
                     <p class="text-lg font-semibold text-white">{{ instances.paginator.count|default:instances|length }}</p>
@@ -172,15 +180,13 @@
                                 {% if instance.qr_code %}
                                 <a href="{% url 'equipment_qr' instance.id %}" 
                                    class="p-1.5 rounded-md bg-slate-700 hover:bg-slate-600 text-slate-300 hover:text-white transition-colors"
-                                   title="View QR"
-                                   up-layer="root" up-modal="large">
+                                   title="View QR">
                                     <i data-lucide="qr-code" class="w-4 h-4"></i>
                                 </a>
                                 {% endif %}
                                 <a href="{% url 'equipment_detail' instance.id %}" 
                                    class="p-1.5 rounded-md bg-slate-700 hover:bg-slate-600 text-slate-300 hover:text-white transition-colors"
-                                   title="View Details"
-                                   up-layer="root" up-modal="large">
+                                   title="View Details">
                                     <i data-lucide="eye" class="w-4 h-4"></i>
                                 </a>
                                 {% if instance.status == 'available' %}
@@ -190,6 +196,23 @@
                                    up-dismiss>
                                     <i data-lucide="hand" class="w-4 h-4"></i>
                                 </a>
+                                {% endif %}
+                                
+                                {% if user.role == 'admin' or user.role == 'gso_staff' %}
+                                <a href="{% url 'instance_edit' instance.id %}" 
+                                   class="p-1.5 rounded-md bg-slate-700 hover:bg-slate-600 text-slate-300 hover:text-white transition-colors"
+                                   title="Edit Unit"
+                                   up-follow>
+                                    <i data-lucide="edit-3" class="w-4 h-4"></i>
+                                </a>
+                                <button hx-post="{% url 'instance_delete' instance.id %}" 
+                                        hx-confirm="Delete this unit?"
+                                        hx-target="closest tr"
+                                        hx-swap="delete"
+                                        class="p-1.5 rounded-md bg-slate-700 hover:bg-red-500/50 text-slate-300 hover:text-white transition-colors"
+                                        title="Delete Unit">
+                                    <i data-lucide="trash-2" class="w-4 h-4"></i>
+                                </button>
                                 {% endif %}
                             </div>
                         </td>

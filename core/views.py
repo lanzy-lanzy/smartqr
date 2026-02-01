@@ -1,6 +1,8 @@
 import json
 import uuid
 from datetime import timedelta
+from django.conf import settings
+import google.generativeai as genai
 
 from django.shortcuts import render, redirect, get_object_or_404
 from django.urls import reverse
@@ -250,6 +252,103 @@ def supply_detail(request, pk):
 
 
 @login_required
+def supply_create(request):
+    """Create a new supply item."""
+    if request.user.role not in [User.Role.ADMIN, User.Role.GSO_STAFF]:
+        messages.error(request, 'Access denied.')
+        return redirect('supplies')
+    
+    if request.method == 'POST':
+        name = request.POST.get('name')
+        category_id = request.POST.get('category')
+        description = request.POST.get('description', '')
+        unit = request.POST.get('unit', 'pcs')
+        min_stock_level = int(request.POST.get('min_stock_level', 5))
+        is_consumable = request.POST.get('is_consumable') == 'on'
+        
+        supply = Supply.objects.create(
+            name=name,
+            category_id=category_id,
+            description=description,
+            unit=unit,
+            min_stock_level=min_stock_level,
+            is_consumable=is_consumable,
+            quantity=0 if not is_consumable else int(request.POST.get('quantity', 0))
+        )
+        
+        # Log transaction for initial stock if consumable
+        if is_consumable and supply.quantity > 0:
+            InventoryTransaction.objects.create(
+                supply=supply,
+                transaction_type=InventoryTransaction.Type.RESTOCK,
+                quantity=supply.quantity,
+                performed_by=request.user,
+                notes="Initial stock"
+            )
+        
+        messages.success(request, f'Supply "{supply.name}" created successfully.')
+        return redirect('supply_detail', pk=supply.pk)
+    
+    context = {
+        'categories': SupplyCategory.objects.filter(is_active=True),
+        'title': 'New Supply'
+    }
+    return render(request, 'supplies/form.html', context)
+
+
+@login_required
+def supply_edit(request, pk):
+    """Edit an existing supply item."""
+    if request.user.role not in [User.Role.ADMIN, User.Role.GSO_STAFF]:
+        messages.error(request, 'Access denied.')
+        return redirect('supplies')
+    
+    supply = get_object_or_404(Supply, pk=pk, is_active=True)
+    
+    if request.method == 'POST':
+        supply.name = request.POST.get('name')
+        supply.category_id = request.POST.get('category')
+        supply.description = request.POST.get('description', '')
+        supply.unit = request.POST.get('unit', 'pcs')
+        supply.min_stock_level = int(request.POST.get('min_stock_level', 5))
+        
+        # Only allow changing is_consumable if no transactions/instances exist?
+        # For simplicity, we'll allow it but it might cause issues if not careful.
+        # usually it's better to keep it fixed once created.
+        
+        supply.save()
+        
+        messages.success(request, f'Supply "{supply.name}" updated successfully.')
+        return redirect('supply_detail', pk=supply.pk)
+    
+    context = {
+        'supply': supply,
+        'categories': SupplyCategory.objects.filter(is_active=True),
+        'title': 'Edit Supply'
+    }
+    return render(request, 'supplies/form.html', context)
+
+
+@login_required
+@require_POST
+def supply_delete(request, pk):
+    """Soft delete a supply item."""
+    if request.user.role not in [User.Role.ADMIN, User.Role.GSO_STAFF]:
+        return JsonResponse({'error': 'Access denied'}, status=403)
+    
+    supply = get_object_or_404(Supply, pk=pk, is_active=True)
+    supply.is_active = False
+    supply.save()
+    
+    messages.success(request, f'Supply "{supply.name}" deleted.')
+    
+    if request.headers.get('HX-Request'):
+        return HttpResponse(status=204)
+        
+    return redirect('supplies')
+
+
+@login_required
 def equipment_list(request):
     """List equipment instances."""
     status = request.GET.get('status')
@@ -305,6 +404,125 @@ def equipment_qr(request, pk):
     return render(request, 'supplies/equipment_qr.html', context)
 
 
+@login_required
+def instance_create(request):
+    """Create a new equipment instance."""
+    if request.user.role not in [User.Role.ADMIN, User.Role.GSO_STAFF]:
+        messages.error(request, 'Access denied.')
+        return redirect('equipment')
+    
+    supply_id = request.GET.get('supply')
+    initial_supply = None
+    if supply_id:
+        initial_supply = get_object_or_404(Supply, pk=supply_id, is_active=True, is_consumable=False)
+    
+    if request.method == 'POST':
+        mode = request.POST.get('mode', 'single')
+        supply_id = request.POST.get('supply')
+        status = request.POST.get('status', EquipmentInstance.Status.AVAILABLE)
+        supply = get_object_or_404(Supply, pk=supply_id, is_active=True)
+        
+        if mode == 'batch':
+            batch_serials = request.POST.get('batch_serials', '').strip().split('\n')
+            code_prefix = request.POST.get('code_prefix', '')
+            
+            created_count = 0
+            for i, sn in enumerate(batch_serials, 1):
+                sn = sn.strip()
+                if not sn:
+                    continue
+                
+                # Auto-generate code if prefix exists, otherwise use SN
+                if code_prefix:
+                    instance_code = f"{code_prefix}{str(created_count + 1).zfill(3)}"
+                else:
+                    instance_code = sn
+                
+                # Ensure code is unique by appending counter if needed
+                base_code = instance_code
+                counter = 1
+                while EquipmentInstance.objects.filter(instance_code=instance_code).exists():
+                    instance_code = f"{base_code}-{counter}"
+                    counter += 1
+                
+                EquipmentInstance.objects.create(
+                    supply=supply,
+                    instance_code=instance_code,
+                    serial_number=sn,
+                    status=status
+                )
+                created_count += 1
+            
+            messages.success(request, f'Successfully created {created_count} instances for "{supply.name}".')
+        else:
+            instance_code = request.POST.get('instance_code')
+            serial_number = request.POST.get('serial_number', '')
+            
+            instance = EquipmentInstance.objects.create(
+                supply=supply,
+                instance_code=instance_code,
+                serial_number=serial_number,
+                status=status
+            )
+            messages.success(request, f'Instance "{instance.instance_code}" created successfully.')
+            
+        return redirect('supply_detail', pk=supply.pk)
+    
+    context = {
+        'supplies': Supply.objects.filter(is_active=True, is_consumable=False),
+        'initial_supply': initial_supply,
+        'status_choices': EquipmentInstance.Status.choices,
+        'title': 'New Equipment Instance'
+    }
+    return render(request, 'supplies/instance_form.html', context)
+
+
+@login_required
+def instance_edit(request, pk):
+    """Edit an existing equipment instance."""
+    if request.user.role not in [User.Role.ADMIN, User.Role.GSO_STAFF]:
+        messages.error(request, 'Access denied.')
+        return redirect('equipment')
+    
+    instance = get_object_or_404(EquipmentInstance, pk=pk, is_active=True)
+    
+    if request.method == 'POST':
+        instance.instance_code = request.POST.get('instance_code')
+        instance.serial_number = request.POST.get('serial_number', '')
+        instance.status = request.POST.get('status')
+        instance.save()
+        
+        messages.success(request, f'Instance "{instance.instance_code}" updated successfully.')
+        return redirect('supply_detail', pk=instance.supply.pk)
+    
+    context = {
+        'instance': instance,
+        'status_choices': EquipmentInstance.Status.choices,
+        'title': 'Edit Equipment Instance'
+    }
+    return render(request, 'supplies/instance_form.html', context)
+
+
+@login_required
+@require_POST
+def instance_delete(request, pk):
+    """Soft delete an equipment instance."""
+    if request.user.role not in [User.Role.ADMIN, User.Role.GSO_STAFF]:
+        return JsonResponse({'error': 'Access denied'}, status=403)
+    
+    instance = get_object_or_404(EquipmentInstance, pk=pk, is_active=True)
+    supply_pk = instance.supply.pk
+    instance.is_active = False
+    instance.save()
+    
+    messages.success(request, f'Instance "{instance.instance_code}" deleted.')
+    
+    if request.headers.get('HX-Request'):
+        return HttpResponse(status=204)
+        
+    return redirect('supply_detail', pk=supply_pk)
+
+
 @login_required  
 def categories_list(request):
     """List supply categories."""
@@ -313,6 +531,76 @@ def categories_list(request):
     )
     
     return render(request, 'supplies/categories.html', {'categories': categories})
+
+
+@login_required
+def category_create(request):
+    """Create a new supply category."""
+    if request.user.role not in [User.Role.ADMIN, User.Role.GSO_STAFF]:
+        messages.error(request, 'Access denied.')
+        return redirect('categories')
+    
+    if request.method == 'POST':
+        name = request.POST.get('name')
+        description = request.POST.get('description', '')
+        icon = request.POST.get('icon', 'package')
+        is_material = request.POST.get('is_material') == 'on'
+        
+        category = SupplyCategory.objects.create(
+            name=name,
+            description=description,
+            icon=icon,
+            is_material=is_material
+        )
+        
+        messages.success(request, f'Category "{category.name}" created successfully.')
+        return redirect('categories')
+    
+    return render(request, 'supplies/category_form.html', {'title': 'New Category'})
+
+
+@login_required
+def category_edit(request, pk):
+    """Edit an existing supply category."""
+    if request.user.role not in [User.Role.ADMIN, User.Role.GSO_STAFF]:
+        messages.error(request, 'Access denied.')
+        return redirect('categories')
+    
+    category = get_object_or_404(SupplyCategory, pk=pk, is_active=True)
+    
+    if request.method == 'POST':
+        category.name = request.POST.get('name')
+        category.description = request.POST.get('description', '')
+        category.icon = request.POST.get('icon', 'package')
+        category.is_material = request.POST.get('is_material') == 'on'
+        category.save()
+        
+        messages.success(request, f'Category "{category.name}" updated successfully.')
+        return redirect('categories')
+    
+    return render(request, 'supplies/category_form.html', {
+        'category': category,
+        'title': 'Edit Category'
+    })
+
+
+@login_required
+@require_POST
+def category_delete(request, pk):
+    """Soft delete a supply category."""
+    if request.user.role not in [User.Role.ADMIN, User.Role.GSO_STAFF]:
+        return JsonResponse({'error': 'Access denied'}, status=403)
+    
+    category = get_object_or_404(SupplyCategory, pk=pk, is_active=True)
+    category.is_active = False
+    category.save()
+    
+    messages.success(request, f'Category "{category.name}" deleted.')
+    
+    if request.headers.get('HX-Request'):
+        return HttpResponse(status=204)
+        
+    return redirect('categories')
 
 
 # =============================================================================
@@ -1182,29 +1470,7 @@ def departments_list(request):
     return render(request, 'admin/departments.html', {'departments': departments})
 
 
-@login_required
-def analytics_view(request):
-    """Analytics dashboard (admin only)."""
-    if request.user.role != User.Role.ADMIN:
-        messages.error(request, 'Access denied.')
-        return redirect('dashboard')
-    
-    # Get various analytics
-    context = {
-        'total_users': User.objects.count(),
-        'active_users': User.objects.filter(approval_status=User.ApprovalStatus.APPROVED).count(),
-        'total_supplies': Supply.objects.filter(is_active=True).count(),
-        'total_requests': SupplyRequest.objects.count(),
-        'total_borrows': BorrowedItem.objects.count(),
-        'overdue_items': BorrowedItem.objects.filter(
-            returned_at__isnull=True,
-            return_deadline__lt=timezone.now()
-        ).count(),
-        'top_borrowers': RequestorBorrowerAnalytics.objects.select_related('user').order_by('-total_borrows')[:10],
-        'low_reliability_users': RequestorBorrowerAnalytics.objects.filter(reliability_score__lt=70).select_related('user')[:10],
-    }
-    
-    return render(request, 'admin/analytics.html', context)
+
 
 
 # =============================================================================

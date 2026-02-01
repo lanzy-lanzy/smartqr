@@ -18,6 +18,19 @@ urlpatterns = [
     path('equipment/<int:pk>/', views.equipment_detail, name='equipment_detail'),
     path('equipment/<int:pk>/qr/', views.equipment_qr, name='equipment_qr'),
     path('categories/', views.categories_list, name='categories'),
+    path('categories/new/', views.category_create, name='category_create'),
+    path('categories/<int:pk>/edit/', views.category_edit, name='category_edit'),
+    path('categories/<int:pk>/delete/', views.category_delete, name='category_delete'),
+    
+    # Supplies CRUD
+    path('supplies/new/', views.supply_create, name='supply_create'),
+    path('supplies/<int:pk>/edit/', views.supply_edit, name='supply_edit'),
+    path('supplies/<int:pk>/delete/', views.supply_delete, name='supply_delete'),
+    
+    # Equipment Instances CRUD
+    path('equipment/new/', views.instance_create, name='instance_create'),
+    path('equipment/<int:pk>/edit/', views.instance_edit, name='instance_edit'),
+    path('equipment/<int:pk>/delete/', views.instance_delete, name='instance_delete'),
     
     # Requests - User
     path('requests/new/', views.request_create, name='request_create'),
@@ -65,7 +78,6 @@ urlpatterns = [
     path('users/', views.users_list, name='users'),
     path('users/<int:pk>/approve/', views.approve_user, name='approve_user'),
     path('departments/', views.departments_list, name='departments'),
-    path('analytics/', views.analytics_view, name='analytics'),
     path('audit-log/', views.audit_log_view, name='audit_log'),
     
     # Reports & Export
@@ -102,6 +114,10 @@ urlpatterns = [
     # REST API v1
     path('api/v1/supplies/', api.api_supplies_list, name='api_v1_supplies'),
     path('api/v1/supplies/<int:pk>/', api.api_supply_detail, name='api_v1_supply_detail'),
+    path('api/v1/ai/suggest-supply/', api.api_ai_suggest_supply, name='api_ai_suggest_supply'),
+    path('api/v1/ai/suggest-prefix/', api.api_ai_suggest_prefix, name='api_ai_suggest_prefix'),
+    path('api/v1/ai/suggest-serials/', api.api_ai_suggest_serials, name='api_ai_suggest_serials'),
+    path('api/v1/ai/suggest-category/', api.api_ai_suggest_category, name='api_ai_suggest_category'),
     path('api/v1/instances/', api.api_instances_list, name='api_v1_instances'),
     path('api/v1/requests/', api.api_requests_list, name='api_v1_requests'),
     path('api/v1/requests/<int:pk>/', api.api_request_detail, name='api_v1_request_detail'),

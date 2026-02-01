@@ -48,6 +48,19 @@
                 </span>
             </div>
         </div>
+
+        {% if user.role == 'admin' or user.role == 'gso_staff' %}
+        <div class="flex gap-2">
+            <a href="{% url 'supply_edit' supply.id %}" up-follow class="p-3 rounded-xl bg-white/5 border border-white/10 hover:bg-white/10 text-slate-400 hover:text-primary-400 transition-all shadow-lg" title="Edit Supply">
+                <i data-lucide="edit-3" class="w-5 h-5"></i>
+            </a>
+            <button hx-post="{% url 'supply_delete' supply.id %}" 
+                    hx-confirm="Delete this supply? It will be soft-deleted and hidden from list."
+                    class="p-3 rounded-xl bg-white/5 border border-white/10 hover:bg-white/10 text-slate-400 hover:text-red-400 transition-all shadow-lg" title="Delete Supply">
+                <i data-lucide="trash-2" class="w-5 h-5"></i>
+            </button>
+        </div>
+        {% endif %}
     </div>
     
     <div class="p-8 pt-4 space-y-8">
@@ -65,7 +78,7 @@
         <div class="grid grid-cols-2 gap-4">
             <div class="bg-white/5 border border-white/10 rounded-2xl p-4 group hover:bg-white/10 transition-all">
                 <p class="text-[9px] font-bold text-slate-500 uppercase tracking-widest mb-1 group-hover:text-slate-400">Inventory Status</p>
-                <p class="font-bold text-white text-lg">{{ supply.quantity }} <span class="text-xs text-slate-500 font-medium">Total {{ supply.unit }}</span></p>
+                <p class="font-bold text-white text-lg">{{ supply.total_quantity }} <span class="text-xs text-slate-500 font-medium">Total {{ supply.unit }}</span></p>
             </div>
             <div class="bg-white/5 border border-white/10 rounded-2xl p-4 group hover:bg-white/10 transition-all">
                 <p class="text-[9px] font-bold text-slate-500 uppercase tracking-widest mb-1 group-hover:text-slate-400">Borrow Policy</p>
@@ -74,9 +87,17 @@
         </div>
         
         <!-- Available Instances (for equipment) -->
-        {% if instances %}
+        {% if not supply.is_consumable %}
         <div>
-            <h3 class="text-[10px] font-bold text-slate-500 uppercase tracking-[0.2em] mb-4">Physical Units Allocation</h3>
+            <div class="flex items-center justify-between mb-4">
+                <h3 class="text-[10px] font-bold text-slate-500 uppercase tracking-[0.2em]">Physical Units Allocation</h3>
+                {% if user.role == 'admin' or user.role == 'gso_staff' %}
+                <a href="{% url 'instance_create' %}?supply={{ supply.id }}" up-follow class="inline-flex items-center gap-1.5 text-[10px] font-bold text-primary-400 hover:text-primary-300 uppercase tracking-widest transition-colors">
+                    <i data-lucide="plus" class="w-3.5 h-3.5"></i>
+                    Add Instance
+                </a>
+                {% endif %}
+            </div>
             <div class="space-y-2 max-h-56 overflow-y-auto custom-scrollbar pr-2">
                 {% for instance in instances %}
                 <div class="flex items-center justify-between p-3.5 bg-white/5 border border-white/10 rounded-xl hover:bg-white/10 transition-all group">
@@ -91,12 +112,34 @@
                             {% endif %}
                         </div>
                     </div>
-                    <span class="px-2.5 py-1 rounded-lg text-[10px] font-bold uppercase tracking-wider
-                        {% if instance.status == 'available' %}bg-green-500/10 text-green-400 border border-green-500/20
-                        {% elif instance.status == 'borrowed' %}bg-indigo-500/10 text-indigo-400 border border-indigo-500/20
-                        {% else %}bg-slate-500/10 text-slate-400 border border-slate-500/20{% endif %}">
-                        {{ instance.get_status_display }}
-                    </span>
+                    
+                    <div class="flex items-center gap-3">
+                        <span class="px-2.5 py-1 rounded-lg text-[10px] font-bold uppercase tracking-wider
+                            {% if instance.status == 'available' %}bg-green-500/10 text-green-400 border border-green-500/20
+                            {% elif instance.status == 'borrowed' %}bg-indigo-500/10 text-indigo-400 border border-indigo-500/20
+                            {% else %}bg-slate-500/10 text-slate-400 border border-slate-500/20{% endif %}">
+                            {{ instance.get_status_display }}
+                        </span>
+
+                        {% if user.role == 'admin' or user.role == 'gso_staff' %}
+                        <div class="flex gap-1 items-center opacity-0 group-hover:opacity-100 transition-opacity">
+                            <a href="{% url 'instance_edit' instance.id %}" up-follow class="p-1.5 rounded-lg hover:bg-white/10 text-slate-500 hover:text-white transition-colors" title="Edit Unit">
+                                <i data-lucide="edit-3" class="w-3.5 h-3.5"></i>
+                            </a>
+                            <button hx-post="{% url 'instance_delete' instance.id %}" 
+                                    hx-confirm="Delete this instance?"
+                                    hx-target="closest .flex"
+                                    hx-swap="delete"
+                                    class="p-1.5 rounded-lg hover:bg-white/10 text-slate-500 hover:text-red-400 transition-colors" title="Delete Unit">
+                                <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
+                            </button>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+                {% empty %}
+                <div class="p-8 text-center bg-white/5 border border-white/10 rounded-2xl border-dashed">
+                    <p class="text-sm text-slate-500">No units registered for this equipment.</p>
                 </div>
                 {% endfor %}
             </div>

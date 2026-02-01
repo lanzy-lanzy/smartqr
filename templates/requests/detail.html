@@ -344,19 +344,18 @@
                 {% endif %}
 
                 {% if request.status == 'approved' and request.qr_code %}
-                <button class="px-8 py-3.5 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white rounded-2xl font-black text-sm tracking-widest transition-all duration-300 shadow-xl shadow-emerald-600/20 hover:shadow-emerald-600/40 active:scale-95 flex items-center gap-3"
-                        up-layer="new modal"
-                        up-href="{% url 'request_qr' request.id %}">
+                <a class="px-8 py-3.5 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white rounded-2xl font-black text-sm tracking-widest transition-all duration-300 shadow-xl shadow-emerald-600/20 hover:shadow-emerald-600/40 active:scale-95 flex items-center gap-3"
+                        href="{% url 'request_qr' request.id %}">
                     <i data-lucide="qr-code" class="w-5 h-5"></i>
                     DISPLAY PASS
-                </button>
+                </a>
                 {% endif %}
             </div>
 
-            <button class="px-8 py-3.5 bg-white/5 border border-white/10 hover:bg-white/10 text-slate-400 hover:text-white rounded-2xl font-black text-sm tracking-widest transition-all duration-300 active:scale-95 flex items-center gap-3" up-dismiss>
+            <a href="javascript:history.back()" class="px-8 py-3.5 bg-white/5 border border-white/10 hover:bg-white/10 text-slate-400 hover:text-white rounded-2xl font-black text-sm tracking-widest transition-all duration-300 active:scale-95 flex items-center gap-3">
                 <i data-lucide="log-out" class="w-5 h-5"></i>
-                CLOSE
-            </button>
+                BACK
+            </a>
         </div>
     </div>
 </div>

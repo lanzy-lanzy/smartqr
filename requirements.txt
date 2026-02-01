@@ -5,3 +5,5 @@ reportlab==4.4.0
 tzdata
 asgiref
 sqlparse
+google-generativeai
+python-dotenv

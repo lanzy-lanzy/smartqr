@@ -153,7 +153,7 @@ class Command(BaseCommand):
         cat_data = [
             ('Electronics', True, 'laptop', 'Electronic equipment like laptops and projectors'),
             ('Office Equipment', True, 'printer', 'Office machines and tools'),
-            ('Furniture', True, 'chair', 'Office furniture items'),
+            ('Furniture', True, 'sofa', 'Office furniture items'),
             ('Office Supplies', False, 'pencil', 'Consumable office supplies'),
             ('Cleaning Supplies', False, 'spray', 'Cleaning materials and chemicals'),
         ]
