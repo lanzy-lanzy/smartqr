@@ -1,0 +1,7 @@
+django==4.2
+qrcode==8.2
+Pillow==11.2.1
+reportlab==4.4.0
+tzdata
+asgiref
+sqlparse
