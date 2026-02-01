@@ -787,6 +787,13 @@ class BorrowedItem(models.Model):
         instance = self.equipment_instance
         instance.last_returned_at = timezone.now()
         
+        # Decrement supply quantity if item is lost or damaged beyond use
+        if status in [self.ReturnStatus.LOST, self.ReturnStatus.DAMAGED]:
+            supply = self.request.supply
+            if supply.quantity > 0:
+                supply.quantity -= 1
+                supply.save()
+        
         if status == self.ReturnStatus.GOOD:
             instance.status = EquipmentInstance.Status.AVAILABLE
         elif status == self.ReturnStatus.DAMAGED:

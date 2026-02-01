@@ -3,107 +3,158 @@
 
 {% block content %}
 <!-- Request Detail Modal -->
-<div class="p-0 max-w-2xl bg-slate-900/95 backdrop-blur-xl border border-white/10 rounded-2xl overflow-hidden shadow-2xl animate-fadeIn lg:mx-auto">
-    <!-- Header with Gradient Backdrop -->
-    <div class="relative p-8 pb-6 bg-gradient-to-br from-indigo-500/10 via-transparent to-transparent">
-        <div class="flex items-start justify-between">
+<div class="p-0 w-full lg:w-[92vw] 2xl:w-[1400px] mx-auto bg-slate-900/95 backdrop-blur-xl border border-white/10 rounded-2xl overflow-hidden shadow-2xl animate-fadeIn">
+    <!-- Header with Enhanced Gradient Backdrop -->
+    <div class="relative p-10 pb-12 bg-gradient-to-br from-indigo-600/20 via-slate-900/40 to-purple-600/10 border-b border-white/10">
+        <!-- Background blur effect -->
+        <div class="absolute inset-0 bg-gradient-to-r from-indigo-500/5 via-transparent to-purple-500/5 pointer-events-none"></div>
+        
+        <div class="relative z-10 flex flex-col lg:flex-row lg:items-start justify-between gap-6">
             <div>
-                <div class="flex items-center gap-2 mb-2">
-                    <span class="px-2 py-0.5 rounded bg-white/5 border border-white/10 font-mono text-xs text-slate-400 capitalize">{{ request.request_code }}</span>
+                <div class="flex items-center gap-3 mb-3">
+                    <span class="px-3 py-1 rounded-lg bg-gradient-to-r from-indigo-500/10 to-indigo-500/5 border border-indigo-500/20 font-mono text-xs text-indigo-300 uppercase tracking-widest shadow-lg shadow-indigo-500/5">
+                        <i data-lucide="package" class="w-3 h-3 inline mr-1.5"></i>
+                        {{ request.request_code }}
+                    </span>
                     {% if request.priority == 'urgent' %}
-                    <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-red-500/20 text-red-300 text-[10px] font-bold uppercase tracking-wider border border-red-500/30">Urgent</span>
+                    <span class="px-3 py-1 rounded-full bg-red-500/15 text-red-300 text-[10px] font-bold uppercase tracking-wider border border-red-500/40 shadow-lg shadow-red-500/10">Urgent</span>
                     {% elif request.priority == 'high' %}
-                    <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-300 text-[10px] font-bold uppercase tracking-wider border border-amber-500/30">High Priority</span>
+                    <span class="px-3 py-1 rounded-full bg-amber-500/15 text-amber-300 text-[10px] font-bold uppercase tracking-wider border border-amber-500/40 shadow-lg shadow-amber-500/10">High Priority</span>
                     {% endif %}
                 </div>
-                <h2 class="text-2xl font-bold text-white tracking-tight">{{ request.supply.name }}</h2>
+                <h2 class="text-3xl font-black text-white tracking-tighter mb-4 drop-shadow-2xl">{{ request.supply.name }}</h2>
+                
+                <div class="flex flex-wrap items-center gap-x-6 gap-y-3">
+                    <div class="flex items-center gap-3">
+                        <div class="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center border border-white/20">
+                            <i data-lucide="user" class="w-4 h-4 text-slate-300"></i>
+                        </div>
+                        <p class="text-sm">
+                            <span class="text-slate-400 font-medium">Requested by</span>
+                            <span class="text-white font-bold ml-1">{{ request.requester.get_full_name }}</span>
+                        </p>
+                    </div>
+                    
+                    {% if request.requester.department %}
+                    <div class="flex items-center gap-2">
+                        <div class="h-4 w-px bg-white/20 hidden md:block"></div>
+                        <span class="px-3 py-1 rounded-lg bg-indigo-500/10 border border-indigo-500/20 text-[10px] font-black uppercase tracking-[0.15em] text-indigo-300 whitespace-nowrap shadow-lg shadow-indigo-500/5">
+                            {{ request.requester.department.name }}
+                        </span>
+                    </div>
+                    {% endif %}
+                    
+                    <div class="flex items-center gap-2">
+                        <div class="h-4 w-px bg-white/20 hidden lg:block"></div>
+                        <span class="flex items-center gap-1.5 text-xs text-slate-400 font-medium whitespace-nowrap">
+                            <i data-lucide="calendar" class="w-3.5 h-3.5 opacity-50"></i>
+                            {{ request.requested_at|date:"M d, Y H:i" }}
+                        </span>
+                    </div>
+                </div>
             </div>
             
-            <div class="flex flex-col items-end gap-2">
+            <div class="flex items-center gap-2 shrink-0">
                 {% if request.status == 'pending' %}
-                <span class="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-amber-500/20 text-amber-300 text-sm font-medium border border-amber-500/30 shadow-lg shadow-amber-500/10">
-                    <i data-lucide="clock" class="w-3.5 h-3.5"></i> Pending
+                <span class="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-full bg-amber-500/15 text-amber-300 text-sm font-bold border border-amber-500/40 shadow-lg shadow-amber-500/10">
+                    <i data-lucide="clock" class="w-4 h-4"></i> Pending
                 </span>
                 {% elif request.status == 'approved' %}
-                <span class="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-blue-500/20 text-blue-300 text-sm font-medium border border-blue-500/30 shadow-lg shadow-blue-500/10">
-                    <i data-lucide="check-circle" class="w-3.5 h-3.5"></i> Approved
+                <span class="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-full bg-blue-500/15 text-blue-300 text-sm font-bold border border-blue-500/40 shadow-lg shadow-blue-500/10">
+                    <i data-lucide="check-circle" class="w-4 h-4"></i> Approved
                 </span>
                 {% elif request.status == 'rejected' %}
-                <span class="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-red-500/20 text-red-300 text-sm font-medium border border-red-500/30 shadow-lg shadow-red-500/10">
-                    <i data-lucide="x-circle" class="w-3.5 h-3.5"></i> Rejected
+                <span class="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-full bg-red-500/15 text-red-300 text-sm font-bold border border-red-500/40 shadow-lg shadow-red-500/10">
+                    <i data-lucide="x-circle" class="w-4 h-4"></i> Rejected
                 </span>
                 {% elif request.status == 'issued' %}
-                <span class="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-green-500/20 text-green-300 text-sm font-medium border border-green-500/30 shadow-lg shadow-green-500/10">
-                    <i data-lucide="package" class="w-3.5 h-3.5"></i> Issued
+                <span class="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-full bg-green-500/15 text-green-300 text-sm font-bold border border-green-500/40 shadow-lg shadow-green-500/10">
+                    <i data-lucide="package" class="w-4 h-4"></i> Issued
                 </span>
                 {% elif request.status == 'returned' %}
-                <span class="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-slate-500/20 text-slate-300 text-sm font-medium border border-slate-500/30">
-                    <i data-lucide="rotate-ccw" class="w-3.5 h-3.5"></i> Returned
+                <span class="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-full bg-slate-500/15 text-slate-300 text-sm font-bold border border-slate-500/40 shadow-lg shadow-slate-500/10">
+                    <i data-lucide="rotate-ccw" class="w-4 h-4"></i> Returned
                 </span>
                 {% endif %}
+                
+                <a href="javascript:history.back()" up-back class="p-2.5 bg-white/5 hover:bg-white/10 border border-white/20 rounded-lg text-slate-400 hover:text-slate-300 transition-all duration-200" title="Back">
+                    <i data-lucide="chevron-left" class="w-5 h-5"></i>
+                </a>
             </div>
         </div>
     </div>
     
-    <div class="p-8 pt-2 space-y-8">
-        <!-- Details Grid -->
-        <div class="grid grid-cols-2 gap-4">
-            <div class="bg-white/5 border border-white/10 rounded-2xl p-4 hover:bg-white/10 transition-all duration-300 group">
-                <p class="text-[10px] font-bold text-slate-500 uppercase tracking-[0.2em] mb-2 group-hover:text-slate-400 transition-colors">Quantity</p>
-                <div class="flex items-baseline gap-2">
-                    <span class="text-xl font-bold text-white">{{ request.quantity }}</span>
-                    <span class="text-sm text-slate-500">{{ request.supply.unit }}</span>
+    <div class="p-8 pt-2 space-y-8 max-h-[70vh] overflow-y-auto custom-scrollbar">
+        <!-- Details Grid with Enhanced Design -->
+        <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
+            <div class="relative bg-gradient-to-br from-indigo-500/10 to-indigo-500/5 border border-indigo-500/20 rounded-xl p-5 group hover:from-indigo-500/15 hover:to-indigo-500/10 transition-all duration-300 overflow-hidden">
+                <div class="absolute inset-0 bg-gradient-to-br from-indigo-600/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none"></div>
+                <p class="relative z-10 text-[10px] font-bold text-indigo-400/70 uppercase tracking-widest mb-3">Quantity</p>
+                <div class="relative z-10 flex items-baseline gap-2">
+                    <span class="text-2xl font-bold text-white">{{ request.quantity }}</span>
+                    <span class="text-xs text-indigo-300/50 uppercase">{{ request.supply.unit }}</span>
                 </div>
             </div>
-            <div class="bg-white/5 border border-white/10 rounded-2xl p-4 hover:bg-white/10 transition-all duration-300 group">
-                <p class="text-[10px] font-bold text-slate-500 uppercase tracking-[0.2em] mb-2 group-hover:text-slate-400 transition-colors">Category</p>
-                <p class="text-lg font-bold text-white truncate">{{ request.supply.category.name }}</p>
+            <div class="relative bg-gradient-to-br from-purple-500/10 to-purple-500/5 border border-purple-500/20 rounded-xl p-5 group hover:from-purple-500/15 hover:to-purple-500/10 transition-all duration-300 overflow-hidden">
+                <div class="absolute inset-0 bg-gradient-to-br from-purple-600/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none"></div>
+                <p class="relative z-10 text-[10px] font-bold text-purple-400/70 uppercase tracking-widest mb-3">Category</p>
+                <p class="relative z-10 text-lg font-bold text-white truncate">{{ request.supply.category.name }}</p>
             </div>
-            <div class="bg-white/5 border border-white/10 rounded-2xl p-4 hover:bg-white/10 transition-all duration-300 group">
-                <p class="text-[10px] font-bold text-slate-500 uppercase tracking-[0.2em] mb-2 group-hover:text-slate-400 transition-colors">Requested By</p>
-                <p class="font-bold text-white">{{ request.requester.get_full_name }}</p>
-                <p class="text-xs text-slate-500 mt-0.5">{{ request.requester.department.name }}</p>
+            <div class="relative bg-gradient-to-br from-blue-500/10 to-blue-500/5 border border-blue-500/20 rounded-xl p-5 group hover:from-blue-500/15 hover:to-blue-500/10 transition-all duration-300 overflow-hidden">
+                <div class="absolute inset-0 bg-gradient-to-br from-blue-600/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none"></div>
+                <p class="relative z-10 text-[10px] font-bold text-blue-400/70 uppercase tracking-widest mb-3">Requester</p>
+                <p class="relative z-10 font-bold text-white truncate">{{ request.requester.get_full_name }}</p>
+                <p class="relative z-10 text-[10px] text-blue-300/50 mt-1 truncate">{{ request.requester.department.name }}</p>
             </div>
-            <div class="bg-white/5 border border-white/10 rounded-2xl p-4 hover:bg-white/10 transition-all duration-300 group">
-                <p class="text-[10px] font-bold text-slate-500 uppercase tracking-[0.2em] mb-2 group-hover:text-slate-400 transition-colors">Requested On</p>
-                <p class="font-bold text-white">{{ request.requested_at|date:"M d, Y" }}</p>
-                <p class="text-xs text-slate-500 mt-0.5">{{ request.requested_at|date:"H:i" }}</p>
-            </div>
-        </div>
-        
-        <!-- Purpose -->
-        <div>
-            <h3 class="text-[10px] font-bold text-slate-500 uppercase tracking-[0.2em] mb-3">Purpose / Reason</h3>
-            <div class="bg-white/5 border border-white/10 rounded-2xl p-5 text-slate-300 leading-relaxed italic">
-                "{{ request.purpose }}"
+            <div class="relative bg-gradient-to-br from-emerald-500/10 to-emerald-500/5 border border-emerald-500/20 rounded-xl p-5 group hover:from-emerald-500/15 hover:to-emerald-500/10 transition-all duration-300 overflow-hidden">
+                <div class="absolute inset-0 bg-gradient-to-br from-emerald-600/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none"></div>
+                <p class="relative z-10 text-[10px] font-bold text-emerald-400/70 uppercase tracking-widest mb-3">Requested On</p>
+                <p class="relative z-10 font-bold text-white">{{ request.requested_at|date:"M d, Y" }}</p>
+                <p class="relative z-10 text-[10px] text-emerald-300/50 mt-1">{{ request.requested_at|date:"H:i" }}</p>
             </div>
         </div>
         
-        <!-- Timeline -->
+        <!-- Purpose Section -->
         <div>
-            <h3 class="text-[10px] font-bold text-slate-500 uppercase tracking-[0.2em] mb-5">Request Lifecycle</h3>
-            <div class="relative space-y-6 before:absolute before:left-[18px] before:top-2 before:bottom-2 before:w-px before:bg-white/10">
-                <div class="flex items-start gap-4">
-                    <div class="relative z-10 w-9 h-9 rounded-full bg-green-500/20 flex items-center justify-center flex-shrink-0 border border-green-500/30">
-                        <i data-lucide="send" class="w-4 h-4 text-green-400"></i>
+            <div class="flex items-center gap-2 mb-3">
+                <i data-lucide="quote" class="w-4 h-4 text-indigo-400"></i>
+                <h3 class="text-[10px] font-bold text-slate-400 uppercase tracking-[0.2em]">Purpose / Reason</h3>
+            </div>
+            <div class="relative bg-gradient-to-br from-indigo-500/5 to-transparent border border-indigo-500/15 rounded-xl p-6 text-slate-300 leading-relaxed italic font-light">
+                <div class="absolute top-3 left-4 text-indigo-500/20 text-3xl">"</div>
+                {{ request.purpose }}
+                <div class="absolute bottom-2 right-4 text-indigo-500/20 text-3xl">"</div>
+            </div>
+        </div>
+        
+        <!-- Timeline Section -->
+        <div>
+            <div class="flex items-center gap-2 mb-6">
+                <i data-lucide="history" class="w-4 h-4 text-emerald-400"></i>
+                <h3 class="text-[10px] font-bold text-slate-400 uppercase tracking-[0.2em]">Request Lifecycle</h3>
+            </div>
+            <div class="relative px-4 space-y-8 before:absolute before:left-[35px] before:top-2 before:bottom-2 before:w-0.5 before:bg-white/5">
+                <div class="relative flex items-start gap-5">
+                    <div class="z-10 w-10 h-10 rounded-full bg-emerald-500/15 flex items-center justify-center shrink-0 border border-emerald-500/30 shadow-lg shadow-emerald-500/10">
+                        <i data-lucide="send" class="w-5 h-5 text-emerald-400"></i>
                     </div>
-                    <div class="flex-1 pt-1">
+                    <div class="pt-1.5 flex-1">
                         <p class="text-sm font-bold text-white">Request Submitted</p>
                         <p class="text-[11px] text-slate-500 mt-0.5">{{ request.requested_at|date:"M d, Y H:i" }}</p>
                     </div>
                 </div>
                 
                 {% if request.reviewed_at %}
-                <div class="flex items-start gap-4">
-                    <div class="relative z-10 w-9 h-9 rounded-full {% if request.status == 'rejected' %}bg-red-500/20 border border-red-500/30{% else %}bg-blue-500/20 border border-blue-500/30{% endif %} flex items-center justify-center flex-shrink-0">
+                <div class="relative flex items-start gap-5">
+                    <div class="z-10 w-10 h-10 rounded-full {% if request.status == 'rejected' %}bg-red-500/15 border-red-500/30 shadow-red-500/10{% else %}bg-blue-500/15 border-blue-500/30 shadow-blue-500/10{% endif %} flex items-center justify-center shrink-0 border shadow-lg">
                         <i data-lucide="{% if request.status == 'rejected' %}x{% else %}check{% endif %}" 
-                           class="w-4 h-4 {% if request.status == 'rejected' %}text-red-400{% else %}text-blue-400{% endif %}"></i>
+                           class="w-5 h-5 {% if request.status == 'rejected' %}text-red-400{% else %}text-blue-400{% endif %}"></i>
                     </div>
-                    <div class="flex-1 pt-1">
+                    <div class="pt-1.5 flex-1">
                         <p class="text-sm font-bold text-white">{{ request.get_status_display }} by {{ request.reviewed_by.get_full_name }}</p>
                         <p class="text-[11px] text-slate-500 mt-0.5">{{ request.reviewed_at|date:"M d, Y H:i" }}</p>
                         {% if request.review_notes %}
-                        <div class="mt-3 p-3 bg-white/5 rounded-xl border border-white/5 text-xs text-slate-400 leading-relaxed">
+                        <div class="mt-4 p-4 bg-white/5 rounded-xl border border-white/5 text-xs text-slate-300 leading-relaxed italic">
                             {{ request.review_notes }}
                         </div>
                         {% endif %}
@@ -112,11 +163,11 @@
                 {% endif %}
                 
                 {% if request.issued_at %}
-                <div class="flex items-start gap-4">
-                    <div class="relative z-10 w-9 h-9 rounded-full bg-indigo-500/20 flex items-center justify-center flex-shrink-0 border border-indigo-500/30">
-                        <i data-lucide="package-check" class="w-4 h-4 text-indigo-400"></i>
+                <div class="relative flex items-start gap-5">
+                    <div class="z-10 w-10 h-10 rounded-full bg-indigo-500/15 flex items-center justify-center shrink-0 border border-indigo-500/30 shadow-lg shadow-indigo-500/10">
+                        <i data-lucide="package-check" class="w-5 h-5 text-indigo-400"></i>
                     </div>
-                    <div class="flex-1 pt-1">
+                    <div class="pt-1.5 flex-1">
                         <p class="text-sm font-bold text-white">Issued by {{ request.issued_by.get_full_name }}</p>
                         <p class="text-[11px] text-slate-500 mt-0.5">{{ request.issued_at|date:"M d, Y H:i" }}</p>
                     </div>
@@ -125,41 +176,46 @@
             </div>
         </div>
         
-        <!-- Borrowed Items -->
+        <!-- Borrowed Items Section -->
         {% if borrowed_items %}
         <div x-data="{ showQrModal: false, activeQrUrl: '', activeQrCode: '', activeItemName: '', isAntiGlare: false }">
-            <h3 class="text-[10px] font-bold text-slate-500 uppercase tracking-[0.2em] mb-3">Allocated Equipment</h3>
+            <div class="flex items-center gap-2 mb-4">
+                <i data-lucide="monitor" class="w-4 h-4 text-indigo-400"></i>
+                <h3 class="text-[10px] font-bold text-slate-400 uppercase tracking-[0.2em]">Allocated Equipment</h3>
+            </div>
             
-            <div class="space-y-3">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {% for item in borrowed_items %}
-                <div class="bg-white/5 border border-white/10 rounded-2xl p-4 flex items-center justify-between group hover:bg-white/10 transition-all duration-300">
-                    <div class="flex items-center gap-4">
-                        <div class="w-10 h-10 rounded-xl bg-indigo-500/10 flex items-center justify-center border border-indigo-500/20">
-                            <i data-lucide="monitor" class="w-5 h-5 text-indigo-400"></i>
-                        </div>
-                        <div>
-                            <p class="text-sm font-bold text-white">{{ item.equipment_instance.instance_code }}</p>
-                            <p class="text-[10px] text-slate-500 font-mono uppercase tracking-wider">{{ item.equipment_instance.serial_number|default:"No Serial" }}</p>
-                        </div>
-                    </div>
+                <div class="relative bg-gradient-to-br from-slate-800/80 to-slate-800/40 border border-white/10 rounded-xl p-5 hover:border-white/20 transition-all duration-300 group overflow-hidden">
+                    <div class="absolute inset-0 bg-gradient-to-br from-indigo-600/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none rounded-xl"></div>
                     
-                    <div class="flex items-center gap-3">
-                        <div class="text-right hidden sm:block">
-                            <p class="text-[9px] font-bold text-slate-500 uppercase tracking-widest">Return by</p>
-                            <p class="text-xs font-bold text-white">{{ item.return_deadline|date:"M d, Y" }}</p>
+                    <div class="relative z-10 flex items-center justify-between">
+                        <div class="flex items-center gap-4">
+                            <div class="w-11 h-11 rounded-lg bg-gradient-to-br from-indigo-500/20 to-indigo-500/10 flex items-center justify-center border border-indigo-500/30 group-hover:from-indigo-500/30 group-hover:to-indigo-500/20 transition-all">
+                                <i data-lucide="monitor" class="w-5 h-5 text-indigo-400"></i>
+                            </div>
+                            <div>
+                                <p class="text-sm font-bold text-white">{{ item.equipment_instance.instance_code }}</p>
+                                <p class="text-[9px] text-slate-500 font-mono tracking-widest mt-0.5">{{ item.equipment_instance.serial_number|default:"No Serial" }}</p>
+                            </div>
                         </div>
                         
-                        {% if not item.returned_at %}
-                        <button @click="showQrModal = true; activeQrUrl = '{{ item.equipment_instance.qr_code.url }}'; activeQrCode = '{{ item.equipment_instance.instance_code }}'; activeItemName = '{{ item.equipment_instance.supply.name }}'; $nextTick(() => lucide.createIcons())"
-                                type="button"
-                                class="w-10 h-10 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center text-slate-400 hover:bg-green-500 hover:text-white hover:border-green-400 transition-all duration-300 shadow-lg hover:shadow-green-500/20">
-                            <i data-lucide="qr-code" class="w-5 h-5"></i>
-                        </button>
-                        {% else %}
-                        <span class="inline-flex items-center gap-1 px-2 py-1 rounded bg-slate-500/10 border border-slate-500/20 text-[9px] font-bold text-slate-500 uppercase tracking-widest">
-                            <i data-lucide="check" class="w-3 h-3"></i> Returned
-                        </span>
-                        {% endif %}
+                        <div class="flex items-center gap-4">
+                            <div class="text-right hidden sm:block">
+                                <p class="text-[8px] font-bold text-slate-500 uppercase tracking-widest mb-1 text-right">Return by</p>
+                                <p class="text-xs font-bold text-white">{{ item.return_deadline|date:"M d, Y" }}</p>
+                            </div>
+                            
+                            {% if not item.returned_at %}
+                            <button @click="showQrModal = true; activeQrUrl = '{{ item.equipment_instance.qr_code.url }}'; activeQrCode = '{{ item.equipment_instance.instance_code }}'; activeItemName = '{{ item.equipment_instance.supply.name }}'; $nextTick(() => lucide.createIcons())"
+                                    type="button"
+                                    class="w-10 h-10 rounded-lg bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center text-indigo-400 hover:bg-indigo-500 hover:text-white transition-all shadow-lg hover:shadow-indigo-500/20 group-hover:scale-110">
+                                <i data-lucide="qr-code" class="w-5 h-5"></i>
+                            </button>
+                            {% else %}
+                            <span class="px-2.5 py-1 rounded-full bg-green-500/15 border border-green-500/30 text-[8px] font-bold text-green-400 uppercase tracking-widest shadow-lg shadow-green-500/10">✓ Returned</span>
+                            {% endif %}
+                        </div>
                     </div>
                 </div>
                 {% endfor %}
@@ -225,46 +281,52 @@
         </div>
         {% endif %}
         
-        <!-- Actions -->
-        <div class="flex gap-4 pt-6 border-t border-white/10">
+        {% if user.role == 'gso_staff' or user.role == 'admin' %}
+            {% if request.status == 'pending' %}
+            <!-- Inline Rejection Form -->
+            <div x-show="confirmingReject" x-collapse class="bg-red-500/5 border border-red-500/20 rounded-2xl p-6">
+                <form hx-post="{% url 'reject_request' request.id %}" 
+                      hx-target="#request-{{ request.id }}"
+                      hx-swap="outerHTML">
+                    {% csrf_token %}
+                    <label class="block text-[10px] font-bold text-red-400 uppercase tracking-widest mb-3">Rejection Reason</label>
+                    <textarea name="notes" 
+                              class="w-full bg-black/20 border border-red-500/20 rounded-xl px-4 py-3 text-sm text-white placeholder-slate-600 focus:outline-none focus:ring-2 focus:ring-red-500/30 transition-all mb-4 resize-none h-24"
+                              placeholder="Explain why this request is being rejected..." 
+                              required></textarea>
+                    <div class="flex gap-3">
+                        <button type="button" @click="confirmingReject = false" class="px-5 py-2.5 bg-white/5 hover:bg-white/10 rounded-xl text-xs font-bold text-slate-400 transition-all flex-1">Cancel</button>
+                        <button type="submit" class="px-5 py-2.5 bg-red-600 hover:bg-red-500 rounded-xl text-xs font-bold text-white transition-all flex-1">Confirm Rejection</button>
+                    </div>
+                </form>
+            </div>
+            {% endif %}
+        {% endif %}
+    </div>
+    
+    <!-- Modal Footer with Enhanced Design -->
+    <div class="p-6 bg-gradient-to-r from-slate-900/80 to-slate-900/40 border-t border-white/10 flex flex-col sm:flex-row items-center justify-between gap-6">
+        <div class="flex items-center gap-4">
             {% if request.status == 'approved' and request.qr_code %}
-            <button class="px-6 py-3 bg-gradient-to-r from-green-600 to-green-500 hover:from-green-500 hover:to-green-400 rounded-2xl font-bold text-white transition-all duration-300 inline-flex items-center justify-center gap-2 shadow-lg shadow-green-500/20 hover:-translate-y-1 flex-1"
+            <button class="px-6 py-2.5 bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-500 hover:to-emerald-500 rounded-lg font-bold text-white text-sm transition-all duration-300 inline-flex items-center justify-center gap-2 shadow-lg shadow-green-500/20 hover:-translate-y-1"
                     up-layer="new modal"
                     up-href="{% url 'request_qr' request.id %}">
-                <i data-lucide="qr-code" class="w-5 h-5"></i>
-                Show Pass
+                <i data-lucide="qr-code" class="w-4 h-4"></i>
+                Display Pass
             </button>
             {% endif %}
             
             {% if user.role == 'gso_staff' or user.role == 'admin' %}
                 {% if request.status == 'pending' %}
-                <div class="flex-1 flex flex-col gap-4" x-data="{ confirmingReject: false }">
-                    <div class="flex gap-4">
-                        <form hx-post="{% url 'approve_request' request.id %}" 
-                              hx-target="#request-{{ request.id }}"
-                              hx-swap="outerHTML"
-                              class="flex-1">
-                            {% csrf_token %}
-                            <button type="submit" class="w-full px-6 py-3 bg-white text-slate-900 hover:bg-slate-100 rounded-2xl font-bold transition-all duration-300 inline-flex items-center justify-center gap-2 shadow-lg shadow-white/5 hover:-translate-y-1">
-                                <i data-lucide="check" class="w-5 h-5"></i>
-                                Approve
-                            </button>
-                        </form>
-                        <button type="button" @click="confirmingReject = true" class="flex-1 px-6 py-3 bg-red-600/10 hover:bg-red-600/20 border border-red-600/30 rounded-2xl font-bold text-red-400 transition-all duration-300 inline-flex items-center justify-center gap-2 hover:-translate-y-1">
-                            <i data-lucide="x" class="w-5 h-5"></i>
-                            Reject
+                <div class="inline-flex items-center gap-3" x-data="{ confirmingReject: false }">
+                    <form hx-post="{% url 'approve_request' request.id %}" 
+                          hx-target="#request-{{ request.id }}"
+                          hx-swap="outerHTML">
+                        {% csrf_token %}
+                        <button type="submit" class="px-6 py-2.5 bg-gradient-to-r from-white to-slate-100 text-slate-900 hover:from-slate-50 hover:to-white rounded-lg font-bold text-sm transition-all duration-300 shadow-lg shadow-white/5 hover:-translate-y-1 inline-flex items-center gap-2">
+                            <i data-lucide="check-circle" class="w-4 h-4"></i>
+                            Approve
                         </button>
-                    </div>
-
-                    <!-- Inline Rejection Form -->
-                    <div x-show="confirmingReject" x-collapse class="bg-red-500/5 border border-red-500/20 rounded-2xl p-6">
-                        <form hx-post="{% url 'reject_request' request.id %}" 
-                              hx-target="#request-{{ request.id }}"
-                              hx-swap="outerHTML">
-                            {% csrf_token %}
-                            <label class="block text-[10px] font-bold text-red-400 uppercase tracking-widest mb-3">Rejection Reason</label>
-                            <textarea name="notes" 
-                                      class="w-full bg-black/20 border border-red-500/20 rounded-xl px-4 py-3 text-sm text-white placeholder-slate-600 focus:outline-none focus:ring-2 focus:ring-red-500/30 transition-all mb-4 resize-none h-24"
                                       placeholder="Explain why this request is being rejected..." 
                                       required></textarea>
                             <div class="flex gap-3">

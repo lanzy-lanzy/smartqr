@@ -1,0 +1,260 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}System Reports - Smart Supply{% endblock %}
+{% block page_title %}System Reports{% endblock %}
+
+{% block content %}
+<div class="space-y-6" x-data="{ 
+    activeTab: 'pdf',
+    startDate: '', 
+    endDate: '',
+    getParams() {
+        let params = new URLSearchParams();
+        if (this.startDate) params.append('start_date', this.startDate);
+        if (this.endDate) params.append('end_date', this.endDate);
+        return params.toString() ? '?' + params.toString() : '';
+    }
+}">
+    <!-- Professional Header Section -->
+    <div class="bg-slate-900/40 backdrop-blur-md rounded-3xl border border-white/5 p-8 relative overflow-hidden">
+        <!-- Decorative Background Gradient -->
+        <div class="absolute -top-24 -right-24 w-64 h-64 bg-red-500/10 rounded-full blur-3xl"></div>
+        <div class="absolute -bottom-24 -left-24 w-64 h-64 bg-indigo-500/10 rounded-full blur-3xl"></div>
+
+        <div class="relative flex flex-col lg:flex-row lg:items-center justify-between gap-8">
+            <div class="max-w-2xl">
+                <div class="flex items-center gap-3 mb-4">
+                    <div class="p-2.5 bg-red-500/20 rounded-xl text-red-400">
+                        <i data-lucide="file-bar-chart" class="w-6 h-6"></i>
+                    </div>
+                    <span class="text-xs font-bold text-red-400 uppercase tracking-widest">Management Suite</span>
+                </div>
+                <h1 class="text-3xl md:text-4xl font-black text-white mb-4 tracking-tight">Reports & Analytics</h1>
+                <p class="text-slate-400 text-lg leading-relaxed">
+                    Generate comprehensive PDF reports and detailed CSV exports. Use the global filters below to specify the timeframe for your data analysis.
+                </p>
+            </div>
+
+            <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-4">
+                <div class="bg-slate-950/50 p-1.5 rounded-2xl border border-white/5 flex gap-1">
+                    <button @click="activeTab = 'pdf'" 
+                            :class="activeTab === 'pdf' ? 'bg-red-500 text-white shadow-lg shadow-red-500/20' : 'text-slate-400 hover:text-white hover:bg-white/5'"
+                            class="flex-1 sm:flex-none px-6 py-3 rounded-xl text-sm font-bold transition-all duration-300 flex items-center justify-center gap-2">
+                        <i data-lucide="file-text" class="w-4 h-4"></i>
+                        PDF Reports
+                    </button>
+                    <button @click="activeTab = 'csv'" 
+                            :class="activeTab === 'csv' ? 'bg-red-500 text-white shadow-lg shadow-red-500/20' : 'text-slate-400 hover:text-white hover:bg-white/5'"
+                            class="flex-1 sm:flex-none px-6 py-3 rounded-xl text-sm font-bold transition-all duration-300 flex items-center justify-center gap-2">
+                        <i data-lucide="table" class="w-4 h-4"></i>
+                        CSV Exports
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filtering Toolbar -->
+    <div class="bg-slate-900/60 backdrop-blur-md rounded-2xl border border-white/5 p-6 flex flex-col md:flex-row md:items-center gap-6">
+        <div class="flex items-center gap-4 text-slate-400">
+            <i data-lucide="calendar" class="w-5 h-5"></i>
+            <span class="text-sm font-bold uppercase tracking-widest text-slate-500">Global Date Filter</span>
+        </div>
+        
+        <div class="flex-1 grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div class="relative group">
+                <span class="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500 group-focus-within:text-red-400 transition-colors pointer-events-none">
+                    <span class="text-[10px] font-bold uppercase tracking-tighter">From</span>
+                </span>
+                <input type="date" x-model="startDate" 
+                       class="w-full bg-slate-950/80 border border-white/10 rounded-xl pl-14 pr-4 py-3 text-sm text-white focus:ring-2 focus:ring-red-500/50 focus:border-red-500 outline-none transition-all cursor-pointer">
+            </div>
+            <div class="relative group">
+                <span class="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500 group-focus-within:text-red-400 transition-colors pointer-events-none">
+                    <span class="text-[10px] font-bold uppercase tracking-tighter">To</span>
+                </span>
+                <input type="date" x-model="endDate" 
+                       class="w-full bg-slate-950/80 border border-white/10 rounded-xl pl-10 pr-4 py-3 text-sm text-white focus:ring-2 focus:ring-red-500/50 focus:border-red-500 outline-none transition-all cursor-pointer">
+            </div>
+        </div>
+
+        <div x-show="startDate || endDate" x-transition class="flex items-center gap-2">
+            <button @click="startDate = ''; endDate = ''" class="px-4 py-2 text-xs font-bold text-slate-400 hover:text-white transition-colors">
+                Clear Filters
+            </button>
+        </div>
+    </div>
+
+    <!-- Content Grid -->
+    <div class="min-h-[400px]">
+        <!-- PDF Section -->
+        <div x-show="activeTab === 'pdf'" x-transition:enter="transition ease-out duration-300" x-transition:enter-start="opacity-0 translate-y-4" x-transition:enter-end="opacity-100 translate-y-0"
+             class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6">
+            
+            <!-- Inventory Card -->
+            <div class="group relative bg-slate-900/40 rounded-3xl border border-white/5 p-8 hover:border-red-500/30 transition-all duration-500 hover:shadow-2xl hover:shadow-red-500/5 flex flex-col">
+                <div class="w-14 h-14 rounded-2xl bg-red-500/10 flex items-center justify-center text-red-400 mb-6 group-hover:scale-110 group-hover:bg-red-500 group-hover:text-white transition-all duration-500 shadow-lg">
+                    <i data-lucide="package" class="w-7 h-7"></i>
+                </div>
+                <h3 class="text-xl font-bold text-white mb-3 tracking-tight">Inventory Status</h3>
+                <p class="text-sm text-slate-400 leading-relaxed mb-8 flex-1">Complete overview of stock levels, categories, and reorder warnings.</p>
+                <a :href="'{% url 'report_inventory' %}' + getParams()" 
+                   class="flex items-center justify-center gap-3 w-full py-4 bg-slate-800 hover:bg-red-500 text-white rounded-2xl font-bold transition-all duration-300 group/btn">
+                    <i data-lucide="download" class="w-5 h-5 group-hover/btn:-translate-y-1 transition-transform"></i>
+                    Generate PDF
+                </a>
+            </div>
+
+            <!-- Borrowing Card -->
+            <div class="group relative bg-slate-900/40 rounded-3xl border border-white/5 p-8 hover:border-indigo-500/30 transition-all duration-500 hover:shadow-2xl hover:shadow-indigo-500/5 flex flex-col">
+                <div class="w-14 h-14 rounded-2xl bg-indigo-500/10 flex items-center justify-center text-indigo-400 mb-6 group-hover:scale-110 group-hover:bg-indigo-500 group-hover:text-white transition-all duration-500 shadow-lg">
+                    <i data-lucide="history" class="w-7 h-7"></i>
+                </div>
+                <h3 class="text-xl font-bold text-white mb-3 tracking-tight">Borrowing History</h3>
+                <p class="text-sm text-slate-400 leading-relaxed mb-8 flex-1">Full transaction logs including active, returned, and overdue items.</p>
+                <a :href="'{% url 'report_borrowing' %}' + getParams()" 
+                   class="flex items-center justify-center gap-3 w-full py-4 bg-slate-800 hover:bg-indigo-500 text-white rounded-2xl font-bold transition-all duration-300 group/btn">
+                    <i data-lucide="download" class="w-5 h-5 group-hover/btn:-translate-y-1 transition-transform"></i>
+                    Generate PDF
+                </a>
+            </div>
+
+            <!-- Analytics Card -->
+            <div class="group relative bg-slate-900/40 rounded-3xl border border-white/5 p-8 hover:border-emerald-500/30 transition-all duration-500 hover:shadow-2xl hover:shadow-emerald-500/5 flex flex-col">
+                <div class="w-14 h-14 rounded-2xl bg-emerald-500/10 flex items-center justify-center text-emerald-400 mb-6 group-hover:scale-110 group-hover:bg-emerald-500 group-hover:text-white transition-all duration-500 shadow-lg">
+                    <i data-lucide="users" class="w-7 h-7"></i>
+                </div>
+                <h3 class="text-xl font-bold text-white mb-3 tracking-tight">User Reliability</h3>
+                <p class="text-sm text-slate-400 leading-relaxed mb-8 flex-1">Analysis of borrowing patterns and return scorecards per department.</p>
+                <a :href="'{% url 'report_analytics' %}' + getParams()" 
+                   class="flex items-center justify-center gap-3 w-full py-4 bg-slate-800 hover:bg-emerald-500 text-white rounded-2xl font-bold transition-all duration-300 group/btn">
+                    <i data-lucide="download" class="w-5 h-5 group-hover/btn:-translate-y-1 transition-transform"></i>
+                    Generate PDF
+                </a>
+            </div>
+
+            <!-- QR Sheet Card -->
+            <div class="group relative bg-slate-900/40 rounded-3xl border border-white/5 p-8 hover:border-amber-500/30 transition-all duration-500 hover:shadow-2xl hover:shadow-amber-500/5 flex flex-col">
+                <div class="w-14 h-14 rounded-2xl bg-amber-500/10 flex items-center justify-center text-amber-400 mb-6 group-hover:scale-110 group-hover:bg-amber-500 group-hover:text-white transition-all duration-500 shadow-lg">
+                    <i data-lucide="qr-code" class="w-7 h-7"></i>
+                </div>
+                <h3 class="text-xl font-bold text-white mb-3 tracking-tight">QR Code Sheets</h3>
+                <p class="text-sm text-slate-400 leading-relaxed mb-8 flex-1">Printable labels for equipment instances organized by category.</p>
+                <a :href="'{% url 'report_qr_sheet' %}' + getParams()" 
+                   class="flex items-center justify-center gap-3 w-full py-4 bg-slate-800 hover:bg-amber-500 text-white rounded-2xl font-bold transition-all duration-300 group/btn">
+                    <i data-lucide="printer" class="w-5 h-5 group-hover/btn:-translate-y-1 transition-transform"></i>
+                    Generate Sheet
+                </a>
+            </div>
+        </div>
+
+        <!-- CSV Section -->
+        <div x-show="activeTab === 'csv'" x-transition:enter="transition ease-out duration-300" x-transition:enter-start="opacity-0 translate-y-4" x-transition:enter-end="opacity-100 translate-y-0"
+             class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6">
+            
+            {% with exports='[{"name":"Supplies","desc":"Active supply items","url":"export_supplies","icon":"box"},{"name":"Equipment","desc":"Individual asset units","url":"export_equipment","icon":"monitor"},{"name":"Requests","desc":"Supply request logs","url":"export_requests","icon":"file-text"},{"name":"Transactions","desc":"Borrowing history","url":"export_borrowed","icon":"arrow-up-right"}]'|json_script:"exports-data" %}
+            <!-- The above is just to keep track of fields, we'll manually expand for simplicity -->
+            {% endwith %}
+
+            <!-- Supply CSV -->
+            <div class="bg-slate-900/40 rounded-3xl border border-white/5 p-6 flex flex-col gap-4">
+                <div class="flex items-center gap-4">
+                    <div class="p-3 bg-slate-800 rounded-2xl text-slate-400 group-hover:text-white transition-colors">
+                        <i data-lucide="box" class="w-6 h-6"></i>
+                    </div>
+                    <div>
+                        <h4 class="font-bold text-white">Supplies</h4>
+                        <p class="text-xs text-slate-500 uppercase tracking-wider">CSV Dataset</p>
+                    </div>
+                </div>
+                <a :href="'{% url 'export_supplies' %}' + getParams()" 
+                   class="mt-auto py-3 bg-slate-800 hover:bg-slate-700 text-white text-sm font-bold rounded-xl transition-all flex items-center justify-center gap-2">
+                    <i data-lucide="download" class="w-4 h-4"></i>
+                    Export
+                </a>
+            </div>
+
+            <!-- Equipment CSV -->
+            <div class="bg-slate-900/40 rounded-3xl border border-white/5 p-6 flex flex-col gap-4">
+                <div class="flex items-center gap-4">
+                    <div class="p-3 bg-slate-800 rounded-2xl text-slate-400 group-hover:text-white transition-colors">
+                        <i data-lucide="monitor" class="w-6 h-6"></i>
+                    </div>
+                    <div>
+                        <h4 class="font-bold text-white">Equipment</h4>
+                        <p class="text-xs text-slate-500 uppercase tracking-wider">CSV Dataset</p>
+                    </div>
+                </div>
+                <a :href="'{% url 'export_equipment' %}' + getParams()" 
+                   class="mt-auto py-3 bg-slate-800 hover:bg-slate-700 text-white text-sm font-bold rounded-xl transition-all flex items-center justify-center gap-2">
+                    <i data-lucide="download" class="w-4 h-4"></i>
+                    Export
+                </a>
+            </div>
+
+            <!-- Requests CSV -->
+            <div class="bg-slate-900/40 rounded-3xl border border-white/5 p-6 flex flex-col gap-4">
+                <div class="flex items-center gap-4">
+                    <div class="p-3 bg-slate-800 rounded-2xl text-slate-400 group-hover:text-white transition-colors">
+                        <i data-lucide="file-text" class="w-6 h-6"></i>
+                    </div>
+                    <div>
+                        <h4 class="font-bold text-white">Requests</h4>
+                        <p class="text-xs text-slate-500 uppercase tracking-wider">CSV Dataset</p>
+                    </div>
+                </div>
+                <a :href="'{% url 'export_requests' %}' + getParams()" 
+                   class="mt-auto py-3 bg-slate-800 hover:bg-slate-700 text-white text-sm font-bold rounded-xl transition-all flex items-center justify-center gap-2">
+                    <i data-lucide="download" class="w-4 h-4"></i>
+                    Export
+                </a>
+            </div>
+
+            <!-- Transactions CSV -->
+            <div class="bg-slate-900/40 rounded-3xl border border-white/5 p-6 flex flex-col gap-4">
+                <div class="flex items-center gap-4">
+                    <div class="p-3 bg-slate-800 rounded-2xl text-slate-400 group-hover:text-white transition-colors">
+                        <i data-lucide="arrow-up-right" class="w-6 h-6"></i>
+                    </div>
+                    <div>
+                        <h4 class="font-bold text-white">Transactions</h4>
+                        <p class="text-xs text-slate-500 uppercase tracking-wider">CSV Dataset</p>
+                    </div>
+                </div>
+                <a :href="'{% url 'export_borrowed' %}' + getParams()" 
+                   class="mt-auto py-3 bg-slate-800 hover:bg-slate-700 text-white text-sm font-bold rounded-xl transition-all flex items-center justify-center gap-2">
+                    <i data-lucide="download" class="w-4 h-4"></i>
+                    Export
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Help Alert -->
+    <div class="bg-amber-500/5 border border-amber-500/10 rounded-3xl p-8 flex items-center gap-6">
+        <div class="w-16 h-16 rounded-2xl bg-amber-500/10 flex items-center justify-center flex-shrink-0 text-amber-500 shadow-inner">
+            <i data-lucide="info" class="w-8 h-8"></i>
+        </div>
+        <div>
+            <h4 class="text-lg font-bold text-amber-200 mb-1">Large Data Generation</h4>
+            <p class="text-sm text-amber-200/60 leading-relaxed">
+                Generating reports with an extensive history may take several seconds. Please avoid refreshing while the system compiles your request.
+            </p>
+        </div>
+    </div>
+</div>
+
+<style>
+    /* Custom date picker styling for Webkit browsers */
+    input[type="date"]::-webkit-calendar-picker-indicator {
+        filter: invert(1);
+        cursor: pointer;
+        opacity: 0.5;
+        transition: opacity 0.3s;
+    }
+    input[type="date"]::-webkit-calendar-picker-indicator:hover {
+        opacity: 1;
+    }
+</style>
+{% endblock %}

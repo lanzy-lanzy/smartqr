@@ -67,6 +67,7 @@ urlpatterns = [
     path('audit-log/', views.audit_log_view, name='audit_log'),
     
     # Reports & Export
+    path('reports/', views.reports_list, name='reports'),
     path('reports/inventory/', views.report_inventory, name='report_inventory'),
     path('reports/borrowing/', views.report_borrowing, name='report_borrowing'),
     path('reports/analytics/', views.report_analytics, name='report_analytics'),

@@ -5,225 +5,325 @@
 {% block page_title %}New Request{% endblock %}
 
 {% block content %}
-<div class="max-w-3xl mx-auto animate-fadeIn" 
+<div class="max-w-6xl mx-auto px-4 py-8 animate-fadeIn" 
      x-data="requestForm()" 
      x-init="init()">
     
-    <!-- Header -->
-    <div class="mb-8">
-        <h2 class="text-3xl font-bold tracking-tight text-white">Create New Request</h2>
-        <p class="text-slate-400 mt-1">Select items you need and submit your request for approval</p>
+    <!-- Modern Header -->
+    <div class="relative mb-10">
+        <div class="absolute -top-10 -left-10 w-64 h-64 bg-primary-500/10 rounded-full blur-3xl -z-10 animate-pulse"></div>
+        <div class="flex flex-col md:flex-row md:items-end justify-between gap-6">
+            <div>
+                <nav class="flex items-center gap-2 text-xs font-bold text-surface-500 uppercase tracking-widest mb-4">
+                    <a href="{% url 'dashboard' %}" class="hover:text-primary-400 transition-colors">Dashboard</a>
+                    <i data-lucide="chevron-right" class="w-3 h-3"></i>
+                    <a href="{% url 'supplies' %}" class="hover:text-primary-400 transition-colors">Supplies</a>
+                    <i data-lucide="chevron-right" class="w-3 h-3"></i>
+                    <span class="text-surface-300">New Request</span>
+                </nav>
+                <h2 class="text-4xl md:text-5xl font-black text-white tracking-tight">
+                    Create New <span class="bg-gradient-to-r from-primary-400 to-accent-400 bg-clip-text text-transparent">Request</span>
+                </h2>
+                <p class="text-surface-400 mt-3 max-w-xl text-lg">
+                    Select the items you need and provide a brief justification to submit your request for approval.
+                </p>
+            </div>
+        </div>
     </div>
     
-    <form @submit.prevent="submitRequest" class="space-y-6">
+    <form @submit.prevent="submitRequest" class="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
         {% csrf_token %}
         
-        <!-- Supply Selection -->
-        <div class="bg-white/5 backdrop-blur-lg border border-white/10 rounded-2xl p-6">
-            <h3 class="text-lg font-semibold text-white mb-4">Select Supply</h3>
-            
-            <!-- Search -->
-            <div class="relative mb-4">
-                <i data-lucide="search" class="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-500"></i>
-                <input type="text" 
-                       x-model="searchQuery"
-                       @input.debounce.300ms="searchSupplies"
-                       class="w-full bg-white/5 border border-white/10 rounded-lg pl-12 pr-4 py-2.5 text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-green-500/50 focus:border-green-500 transition-all" 
-                       placeholder="Search for supplies...">
-            </div>
-            
-            <!-- Category Filter -->
-            <div class="flex flex-wrap gap-2 mb-4">
-                <button type="button" 
-                        @click="filterCategory = ''"
-                        :class="filterCategory === '' ? 'bg-gradient-to-r from-green-600 to-green-500 hover:from-green-500 hover:to-green-400 text-white shadow-lg shadow-green-500/20' : 'bg-white/5 border border-white/10 text-slate-300 hover:bg-white/10'"
-                        class="inline-flex items-center justify-center gap-2 px-3 py-1.5 text-xs rounded-lg font-medium transition-all duration-200 cursor-pointer">
-                    All
-                </button>
-                {% for cat in categories %}
-                <button type="button" 
-                        @click="filterCategory = '{{ cat.id }}'; searchSupplies()"
-                        :class="filterCategory === '{{ cat.id }}' ? 'bg-gradient-to-r from-green-600 to-green-500 hover:from-green-500 hover:to-green-400 text-white shadow-lg shadow-green-500/20' : 'bg-white/5 border border-white/10 text-slate-300 hover:bg-white/10'"
-                        class="inline-flex items-center justify-center gap-2 px-3 py-1.5 text-xs rounded-lg font-medium transition-all duration-200 cursor-pointer">
-                    {{ cat.name }}
-                </button>
-                {% endfor %}
-            </div>
-            
-            <!-- Results -->
-            <div class="border border-white/10 rounded-xl max-h-64 overflow-y-auto">
-                <template x-if="loading">
-                    <div class="p-8 text-center">
-                        <div class="w-4 h-4 border-2 border-slate-600 border-t-slate-300 rounded-full animate-spin mx-auto mb-2"></div>
-                        <p class="text-sm text-slate-500">Searching...</p>
+        <!-- Left Column: Supply Selection (7/12) -->
+        <div class="lg:col-span-7 space-y-6">
+            <div class="glass-panel rounded-3xl border border-white/10 p-6 md:p-8">
+                <div class="flex items-center gap-3 mb-6">
+                    <div class="w-10 h-10 rounded-xl bg-primary-500/20 flex items-center justify-center text-primary-400">
+                        <i data-lucide="package" class="w-6 h-6"></i>
                     </div>
-                </template>
-                
-                <template x-if="!loading && searchResults.length === 0">
-                    <div class="p-8 text-center">
-                        <i data-lucide="package-search" class="w-12 h-12 text-slate-600 mx-auto mb-2"></i>
-                        <p class="text-slate-500">No supplies found</p>
-                    </div>
-                </template>
-                
-                <template x-for="supply in searchResults" :key="supply.id">
-                    <div @click="selectSupply(supply)"
-                         :class="selectedSupply?.id === supply.id ? 'bg-green-500/20 border-l-4 border-l-green-500' : 'hover:bg-white/5'"
-                         class="p-4 border-b border-white/5 last:border-b-0 cursor-pointer transition-colors">
-                        <div class="flex items-center justify-between">
-                            <div>
-                                <p class="font-medium text-white" x-text="supply.name"></p>
-                                <p class="text-sm text-slate-400" x-text="supply.category"></p>
-                            </div>
-                            <div class="text-right">
-                                <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-green-500/10 text-green-400 border border-green-500/30" x-show="supply.available > 0">
-                                    <span x-text="supply.available"></span> <span x-text="supply.unit"></span>
-                                </span>
-                                <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-red-500/10 text-red-400 border border-red-500/30" x-show="supply.available === 0">Out of Stock</span>
-                            </div>
-                        </div>
-                    </div>
-                </template>
-            </div>
-            
-            <!-- Selected Supply Display -->
-            <template x-if="selectedSupply">
-                <div class="mt-4 p-4 bg-green-500/10 border border-green-500/30 rounded-xl">
-                    <div class="flex items-center justify-between">
-                        <div class="flex items-center gap-3">
-                            <div class="w-10 h-10 rounded-lg bg-green-500/20 flex items-center justify-center">
-                                <i data-lucide="check" class="w-5 h-5 text-green-400"></i>
-                            </div>
-                            <div>
-                                <p class="font-medium text-green-300" x-text="selectedSupply.name"></p>
-                                <p class="text-sm text-green-400/70" x-text="selectedSupply.category"></p>
-                            </div>
-                        </div>
-                        <button type="button" @click="selectedSupply = null" class="p-2 hover:bg-white/10 rounded-lg transition-colors">
-                            <i data-lucide="x" class="w-4 h-4 text-green-400"></i>
-                        </button>
-                    </div>
+                    <h3 class="text-xl font-bold text-white">Select Supply</h3>
                 </div>
-            </template>
-            
-            <input type="hidden" name="supply_id" :value="selectedSupply?.id">
-        </div>
-        
-        <!-- Specific Instance Selection (for equipment) -->
-        <template x-if="selectedSupply && !selectedSupply.is_consumable">
-            <div class="bg-white/5 backdrop-blur-lg border border-white/10 rounded-2xl p-6">
-                <h3 class="text-lg font-semibold text-white mb-4">Select Specific Unit (Optional)</h3>
-                <p class="text-sm text-slate-400 mb-4">You can request a specific equipment unit or let GSO assign one for you.</p>
                 
-                <div class="space-y-2 max-h-48 overflow-y-auto">
-                    <div @click="selectedInstance = null"
-                         :class="selectedInstance === null ? 'bg-green-500/20 border-green-500' : 'border-white/10 hover:bg-white/5'"
-                         class="p-3 border rounded-xl cursor-pointer transition-colors">
-                        <p class="font-medium text-white">Any Available Unit</p>
-                        <p class="text-sm text-slate-400">Let GSO assign the best available unit</p>
-                    </div>
+                <!-- Advanced Search -->
+                <div class="relative mb-6 group">
+                    <div class="absolute inset-0 bg-primary-500/5 rounded-2xl blur-xl opacity-0 group-focus-within:opacity-100 transition-opacity"></div>
+                    <i data-lucide="search" class="absolute left-5 top-1/2 -translate-y-1/2 w-5 h-5 text-surface-500 group-focus-within:text-primary-400 transition-colors"></i>
+                    <input type="text" 
+                           x-model="searchQuery"
+                           @input.debounce.300ms="searchSupplies"
+                           class="w-full bg-white/5 border border-white/10 rounded-2xl pl-14 pr-4 py-4 text-white placeholder-surface-500 focus:outline-none focus:ring-2 focus:ring-primary-500/50 focus:border-primary-500 transition-all text-lg" 
+                           placeholder="What do you need today?">
+                </div>
+                
+                <!-- Category Capsule Filters -->
+                <div class="flex flex-wrap gap-2 mb-8">
+                    <button type="button" 
+                            @click="filterCategory = ''; searchSupplies()"
+                            :class="filterCategory === '' ? 'bg-primary-500 text-white shadow-lg shadow-primary-500/20' : 'bg-white/5 text-surface-400 hover:bg-white/10 hover:text-white'"
+                            class="px-4 py-2 text-sm font-bold rounded-xl transition-all duration-300">
+                        All Items
+                    </button>
+                    {% for cat in categories %}
+                    <button type="button" 
+                            @click="filterCategory = '{{ cat.id }}'; searchSupplies()"
+                            :class="filterCategory === '{{ cat.id }}' ? 'bg-primary-500 text-white shadow-lg shadow-primary-500/20' : 'bg-white/5 text-surface-400 hover:bg-white/10 hover:text-white'"
+                            class="px-4 py-2 text-sm font-bold rounded-xl transition-all duration-300">
+                        {{ cat.name }}
+                    </button>
+                    {% endfor %}
+                </div>
+                
+                <!-- Results Grid -->
+                <div class="grid gap-3 max-h-[500px] overflow-y-auto pr-2 custom-scrollbar">
+                    <template x-if="loading">
+                        <div class="py-20 text-center">
+                            <div class="w-10 h-10 border-4 border-primary-500/20 border-t-primary-500 rounded-full animate-spin mx-auto mb-4"></div>
+                            <p class="text-surface-500 font-bold uppercase tracking-widest text-xs">Finding supplies...</p>
+                        </div>
+                    </template>
                     
-                    <template x-for="instance in availableInstances" :key="instance.id">
-                        <div @click="selectedInstance = instance"
-                             :class="selectedInstance?.id === instance.id ? 'bg-green-500/20 border-green-500' : 'border-white/10 hover:bg-white/5'"
-                             class="p-3 border rounded-xl cursor-pointer transition-colors">
-                            <div class="flex items-center justify-between">
-                                <div>
-                                    <p class="font-medium text-white" x-text="instance.code"></p>
-                                    <p class="text-sm text-slate-400" x-text="'S/N: ' + (instance.serial || 'N/A')"></p>
+                    <template x-if="!loading && searchResults.length === 0">
+                        <div class="py-20 text-center glass-panel rounded-2xl border-dashed border-2 border-white/5">
+                            <i data-lucide="search-x" class="w-16 h-16 text-surface-600 mx-auto mb-4 opacity-50"></i>
+                            <p class="text-surface-400 text-lg">No supplies found matching your criteria</p>
+                        </div>
+                    </template>
+                    
+                    <template x-for="supply in searchResults" :key="supply.id">
+                        <div @click="supply.available > 0 ? selectSupply(supply) : null"
+                             :class="{
+                                 'ring-2 ring-primary-500 bg-primary-500/10': selectedSupply?.id === supply.id,
+                                 'bg-white/[0.02] border border-white/5 hover:border-white/20 hover:bg-white/5 cursor-pointer': supply.available > 0,
+                                 'opacity-40 cursor-not-allowed bg-transparent border-white/5': supply.available === 0
+                             }"
+                             class="p-4 rounded-2xl transition-all duration-300 relative group overflow-hidden">
+                            
+                            <!-- Active/Inactive Background Glow -->
+                            <div class="absolute inset-0 bg-gradient-to-r from-primary-500/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                            
+                            <div class="relative flex items-center justify-between gap-4">
+                                <div class="flex items-center gap-4 min-w-0">
+                                    <div :class="supply.available > 0 ? 'bg-primary-500/20 text-primary-400' : 'bg-surface-800 text-surface-600'"
+                                         class="w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0 transition-colors">
+                                        <i :data-lucide="supply.is_consumable ? 'beaker' : 'monitor'" class="w-6 h-6"></i>
+                                    </div>
+                                    <div class="min-w-0">
+                                        <h4 class="font-bold text-lg text-white truncate group-hover:text-primary-300 transition-colors" x-text="supply.name"></h4>
+                                        <p class="text-sm text-surface-500 flex items-center gap-1.5" x-text="supply.category"></p>
+                                    </div>
                                 </div>
-                                <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-green-500/10 text-green-400 border border-green-500/30">Available</span>
+                                
+                                <div class="text-right flex-shrink-0">
+                                    <template x-if="supply.available > 0">
+                                        <div class="flex flex-col items-end">
+                                            <span class="text-xl font-black text-white" x-text="supply.available"></span>
+                                            <span class="text-[10px] font-black uppercase tracking-tighter text-primary-400" x-text="supply.unit"></span>
+                                        </div>
+                                    </template>
+                                    <template x-if="supply.available === 0">
+                                        <span class="px-2.5 py-1 rounded-lg bg-red-500/10 text-red-400 text-[10px] font-black uppercase tracking-tighter border border-red-500/20">
+                                            Out of Stock
+                                        </span>
+                                    </template>
+                                </div>
                             </div>
                         </div>
                     </template>
                 </div>
                 
-                <input type="hidden" name="instance_id" :value="selectedInstance?.id">
+                <!-- Equipment Instance Selection -->
+                <template x-if="selectedSupply && !selectedSupply.is_consumable">
+                    <div class="mt-8 pt-8 border-t border-white/10 animate-slideUp">
+                        <div class="flex items-center gap-3 mb-4">
+                            <div class="w-8 h-8 rounded-lg bg-accent-500/20 flex items-center justify-center text-accent-400">
+                                <i data-lucide="layers" class="w-5 h-5"></i>
+                            </div>
+                            <h3 class="text-lg font-bold text-white">Specific Unit <span class="text-surface-500 font-medium">(Optional)</span></h3>
+                        </div>
+                        
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 max-h-48 overflow-y-auto pr-2 custom-scrollbar">
+                            <div @click="selectedInstance = null"
+                                 :class="selectedInstance === null ? 'ring-2 ring-primary-500 bg-primary-500/10' : 'bg-white/[0.02] border border-white/5 hover:bg-white/5'"
+                                 class="p-4 rounded-xl cursor-pointer transition-all duration-300">
+                                <p class="font-bold text-white text-sm">Any available unit</p>
+                                <p class="text-xs text-surface-500">Fastest fulfillment</p>
+                            </div>
+                            
+                            <template x-for="instance in availableInstances" :key="instance.id">
+                                <div @click="instance.status === 'available' ? selectedInstance = instance : null"
+                                     :class="{
+                                         'ring-2 ring-primary-500 bg-primary-500/10': selectedInstance?.id === instance.id,
+                                         'bg-white/[0.02] border border-white/5 hover:bg-white/5 cursor-pointer': instance.status === 'available',
+                                         'opacity-40 cursor-not-allowed grayscale': instance.status !== 'available'
+                                     }"
+                                     class="p-4 rounded-xl transition-all duration-300">
+                                    <p class="font-bold text-white text-sm" x-text="instance.code"></p>
+                                    <p class="text-xs text-surface-500 truncate" x-text="instance.serial ? 'SN: ' + instance.serial : 'No Serial'"></p>
+                                </div>
+                            </template>
+                        </div>
+                    </div>
+                </template>
             </div>
-        </template>
+        </div>
         
-        <!-- Request Details -->
-        <div class="bg-white/5 backdrop-blur-lg border border-white/10 rounded-2xl p-6">
-            <h3 class="text-lg font-semibold text-white mb-4">Request Details</h3>
-            
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                 <!-- Quantity -->
-                 <div>
-                     <label class="block text-sm font-medium text-slate-300 mb-2">Quantity</label>
-                     <div class="flex items-center gap-2">
-                         <button type="button" 
-                                 @click="quantity = Math.max(1, quantity - 1)"
-                                 class="inline-flex items-center justify-center gap-2 px-3 py-1.5 text-xs rounded-lg font-medium transition-all duration-200 cursor-pointer bg-white/5 border border-white/10 text-slate-300 hover:bg-white/10">
-                             <i data-lucide="minus" class="w-4 h-4"></i>
-                         </button>
-                         <input type="number" 
-                                x-model="quantity"
-                                name="quantity" 
-                                min="1" 
-                                :max="selectedSupply?.available || 100"
-                                class="w-20 bg-white/5 border border-white/10 rounded-lg px-4 py-2.5 text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-green-500/50 focus:border-green-500 transition-all text-center">
-                         <button type="button" 
-                                 @click="quantity = Math.min(selectedSupply?.available || 100, quantity + 1)"
-                                 class="inline-flex items-center justify-center gap-2 px-3 py-1.5 text-xs rounded-lg font-medium transition-all duration-200 cursor-pointer bg-white/5 border border-white/10 text-slate-300 hover:bg-white/10">
-                             <i data-lucide="plus" class="w-4 h-4"></i>
-                         </button>
-                         <span class="text-sm text-slate-400" x-text="selectedSupply?.unit || 'pcs'"></span>
-                     </div>
-                 </div>
-                 
-                 <!-- Priority -->
-                 <div>
-                     <label class="block text-sm font-medium text-slate-300 mb-2">Priority</label>
-                     <select name="priority" x-model="priority" class="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-2.5 text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-green-500/50 focus:border-green-500 transition-all">
-                         {% for value, label in priority_choices %}
-                         <option value="{{ value }}">{{ label }}</option>
-                         {% endfor %}
-                     </select>
-                 </div>
-             </div>
-             
-             <!-- Needed By Date -->
-             <div class="mt-4">
-                 <label class="block text-sm font-medium text-slate-300 mb-2">Needed By (Optional)</label>
-                 <input type="datetime-local" 
-                        name="needed_by" 
-                        x-model="neededBy"
-                        class="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-2.5 text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-green-500/50 focus:border-green-500 transition-all"
-                        :min="minDate">
-             </div>
-             
-             <!-- Purpose -->
-             <div class="mt-4">
-                 <label class="block text-sm font-medium text-slate-300 mb-2">Purpose / Reason</label>
-                 <textarea name="purpose" 
-                           x-model="purpose"
-                           class="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-2.5 text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-green-500/50 focus:border-green-500 transition-all" 
-                           placeholder="Explain why you need this item..."
-                           required></textarea>
-             </div>
+        <!-- Right Column: Request details & Summary (5/12) -->
+        <div class="lg:col-span-5 space-y-6 sticky top-24">
+            <!-- Selected Item Summary -->
+            <div class="glass-panel rounded-3xl border border-white/10 p-6 md:p-8 bg-gradient-to-br from-primary-500/5 to-transparent overflow-hidden relative">
+                <div class="absolute -right-10 -top-10 w-40 h-40 bg-accent-500/10 rounded-full blur-3xl"></div>
+                
+                <h3 class="text-xl font-bold text-white mb-6 flex items-center gap-3">
+                    <i data-lucide="file-text" class="w-6 h-6 text-accent-400"></i>
+                    Request Details
+                </h3>
+                
+                <!-- Empty State for selection -->
+                <template x-if="!selectedSupply">
+                    <div class="py-10 text-center animate-pulse">
+                        <div class="w-16 h-16 rounded-2xl bg-white/5 border border-dashed border-white/10 flex items-center justify-center mx-auto mb-4">
+                            <i data-lucide="mouse-pointer-2" class="w-8 h-8 text-surface-600"></i>
+                        </div>
+                        <p class="text-surface-400 font-medium">Select a supply to continue</p>
+                    </div>
+                </template>
+                
+                <template x-if="selectedSupply">
+                    <div class="space-y-6 animate-fadeIn">
+                        <!-- Active Item Info -->
+                        <div class="flex items-center gap-4 p-4 bg-white/5 rounded-2xl border border-white/10">
+                            <div class="w-14 h-14 rounded-xl bg-primary-500/20 flex items-center justify-center text-primary-400">
+                                <i :data-lucide="selectedSupply.is_consumable ? 'beaker' : 'monitor'" class="w-8 h-8"></i>
+                            </div>
+                            <div class="min-w-0 flex-1">
+                                <h4 class="font-black text-white text-lg truncate" x-text="selectedSupply.name"></h4>
+                                <div class="flex items-center gap-2">
+                                    <span class="text-xs font-bold text-surface-500 uppercase tracking-tighter" x-text="selectedSupply.category"></span>
+                                    <span class="text-surface-700">•</span>
+                                    <span class="text-xs font-bold text-primary-400" x-text="selectedSupply.available + ' ' + selectedSupply.unit + ' available'"></span>
+                                </div>
+                            </div>
+                            <button type="button" @click="selectedSupply = null" class="p-2 hover:bg-red-500/20 text-surface-500 hover:text-red-400 transition-all rounded-xl">
+                                <i data-lucide="x" class="w-5 h-5"></i>
+                            </button>
+                        </div>
+                        
+                        <!-- Form Fields -->
+                        <div class="space-y-5">
+                            <!-- Quantity Selector -->
+                            <div>
+                                <label class="block text-sm font-bold text-surface-400 uppercase tracking-widest mb-3">Quantity</label>
+                                <div class="flex items-center gap-4 bg-black/20 p-2 rounded-2xl border border-white/5">
+                                    <button type="button" 
+                                            @click="quantity = Math.max(1, quantity - 1)"
+                                            class="w-12 h-12 flex items-center justify-center rounded-xl bg-white/5 hover:bg-white/10 text-white transition-all active:scale-90">
+                                        <i data-lucide="minus" class="w-5 h-5"></i>
+                                    </button>
+                                    <div class="flex-1 text-center">
+                                        <input type="number" 
+                                               x-model="quantity"
+                                               name="quantity" 
+                                               min="1" 
+                                               :max="selectedSupply?.available || 100"
+                                               class="w-full bg-transparent text-2xl font-black text-white text-center focus:outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none">
+                                        <p class="text-[10px] font-black uppercase text-surface-500 tracking-widest" x-text="selectedSupply.unit"></p>
+                                    </div>
+                                    <button type="button" 
+                                            @click="quantity = Math.min(selectedSupply?.available || 100, quantity + 1)"
+                                            class="w-12 h-12 flex items-center justify-center rounded-xl bg-white/5 hover:bg-white/10 text-white transition-all active:scale-90">
+                                        <i data-lucide="plus" class="w-5 h-5"></i>
+                                    </button>
+                                </div>
+                            </div>
+                            
+                            <div class="grid grid-cols-2 gap-4">
+                                <!-- Priority -->
+                                <div class="col-span-1">
+                                    <label class="block text-sm font-bold text-surface-400 uppercase tracking-widest mb-3">Priority</label>
+                                    <select name="priority" x-model="priority" class="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:ring-2 focus:ring-primary-500/50 appearance-none transition-all">
+                                        {% for value, label in priority_choices %}
+                                        <option value="{{ value }}">{{ label }}</option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                                <!-- Needed By -->
+                                <div class="col-span-1">
+                                    <label class="block text-sm font-bold text-surface-400 uppercase tracking-widest mb-3">Needed By</label>
+                                    <input type="datetime-local" 
+                                           name="needed_by" 
+                                           x-model="neededBy"
+                                           class="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white text-xs focus:outline-none focus:ring-2 focus:ring-primary-500/50 transition-all custom-calendar-icon"
+                                           :min="minDate">
+                                </div>
+                            </div>
+                            
+                            <!-- Purpose -->
+                            <div>
+                                <label class="block text-sm font-bold text-surface-400 uppercase tracking-widest mb-3">Justification / Purpose</label>
+                                <textarea name="purpose" 
+                                          x-model="purpose"
+                                          rows="4"
+                                          class="w-full bg-white/5 border border-white/10 rounded-2xl px-5 py-4 text-white placeholder-surface-600 focus:outline-none focus:ring-2 focus:ring-primary-500/50 transition-all resize-none" 
+                                          placeholder="Why is this item needed for your department?"
+                                          required></textarea>
+                            </div>
+                        </div>
+                        
+                        <!-- Actions -->
+                        <div class="pt-6 space-y-3">
+                            <button type="submit" 
+                                    class="w-full group relative flex items-center justify-center gap-3 px-8 py-5 bg-primary-500 hover:bg-primary-400 text-white rounded-2xl font-black text-lg transition-all shadow-xl shadow-primary-500/20 active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed overflow-hidden"
+                                    :disabled="!canSubmit || submitting">
+                                <div class="absolute inset-0 bg-gradient-to-r from-white/20 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000"></div>
+                                
+                                <template x-if="submitting">
+                                    <div class="w-6 h-6 border-4 border-white/20 border-t-white rounded-full animate-spin"></div>
+                                </template>
+                                <template x-if="!submitting">
+                                    <i data-lucide="send" class="w-6 h-6 group-hover:translate-x-1 group-hover:-translate-y-1 transition-transform"></i>
+                                </template>
+                                <span x-text="submitting ? 'Submitting...' : 'Submit Request'"></span>
+                            </button>
+                            
+                            <a href="{% url 'supplies' %}" class="w-full flex items-center justify-center gap-2 py-4 text-sm font-bold text-surface-500 hover:text-white transition-all uppercase tracking-widest">
+                                <i data-lucide="arrow-left" class="w-4 h-4"></i>
+                                Back to Supplies
+                            </a>
+                        </div>
+                    </div>
+                </template>
             </div>
             
-            <!-- Submit -->
-            <div class="flex items-center justify-between">
-             <a href="{% url 'supplies' %}" class="inline-flex items-center justify-center gap-2 px-4 py-2.5 text-sm rounded-lg font-medium transition-all duration-200 cursor-pointer bg-white/5 border border-white/10 text-slate-300 hover:bg-white/10">
-                 <i data-lucide="arrow-left" class="w-4 h-4"></i>
-                 Cancel
-             </a>
-             
-             <button type="submit" 
-                     class="inline-flex items-center justify-center gap-2 px-4 py-2.5 text-sm rounded-lg font-medium transition-all duration-200 cursor-pointer bg-gradient-to-r from-green-600 to-green-500 hover:from-green-500 hover:to-green-400 text-white shadow-lg shadow-green-500/20 disabled:opacity-50 disabled:cursor-not-allowed"
-                     :disabled="!canSubmit || submitting">
-                 <template x-if="submitting">
-                     <div class="w-4 h-4 border-2 border-white/20 border-t-white rounded-full animate-spin"></div>
-                 </template>
-                 <template x-if="!submitting">
-                     <i data-lucide="send" class="w-5 h-5"></i>
-                 </template>
-                 <span x-text="submitting ? 'Submitting...' : 'Submit Request'"></span>
-             </button>
+            <!-- Context Info -->
+            <div class="p-6 rounded-3xl border border-dashed border-white/10 text-center">
+                <p class="text-sm text-surface-500 leading-relaxed">
+                    By submitting this request, you agree to the <span class="text-surface-300 font-bold">Smart Supply Terms of Use</span>. Approvals usually take 24-48 business hours.
+                </p>
             </div>
+        </div>
+        
+        <input type="hidden" name="supply_id" :value="selectedSupply?.id">
+        <input type="hidden" name="instance_id" :value="selectedInstance?.id">
     </form>
 </div>
+
+<style>
+    .custom-scrollbar::-webkit-scrollbar { width: 4px; }
+    .custom-scrollbar::-webkit-scrollbar-track { background: rgba(255, 255, 255, 0.02); }
+    .custom-scrollbar::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.1); border-radius: 10px; }
+    .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: rgba(255, 255, 255, 0.2); }
+    
+    .glass-panel {
+        background: rgba(15, 23, 42, 0.6);
+        backdrop-filter: blur(16px);
+        -webkit-backdrop-filter: blur(16px);
+    }
+    
+    input[type="datetime-local"]::-webkit-calendar-picker-indicator {
+        filter: invert(1);
+        cursor: pointer;
+    }
+</style>
 
 <script>
 function requestForm() {
@@ -246,17 +346,14 @@ function requestForm() {
         },
         
         get canSubmit() {
-            return this.selectedSupply && this.purpose.length > 0;
+            return this.selectedSupply && 
+                   this.selectedSupply.available >= this.quantity && 
+                   this.purpose.trim().length > 0;
         },
         
         init() {
-            // Check for pre-selected supply/instance from URL or context
-            const urlParams = new URLSearchParams(window.location.search);
-            const supplyId = urlParams.get('supply');
-            const instanceId = urlParams.get('instance');
-            
+            // Check for pre-selected items
             {% if preselected_instance %}
-            // Handle preselected instance from server context
             this.selectedSupply = {
                 id: {{ preselected_instance.supply.id }},
                 name: "{{ preselected_instance.supply.name }}",
@@ -270,12 +367,8 @@ function requestForm() {
                 code: "{{ preselected_instance.instance_code }}",
                 serial: "{{ preselected_instance.serial_number|default:'' }}"
             };
-            this.quantity = 1;
-            
-            // Load available instances
-            this.loadAvailableInstances({{ preselected_instance.supply.id }});
+            this.loadAvailableInstances(this.selectedSupply.id);
             {% elif preselected_supply %}
-            // Handle preselected supply from server context
             this.selectedSupply = {
                 id: {{ preselected_supply.id }},
                 name: "{{ preselected_supply.name }}",
@@ -284,40 +377,12 @@ function requestForm() {
                 unit: "{{ preselected_supply.unit }}",
                 is_consumable: {{ preselected_supply.is_consumable|yesno:"true,false" }}
             };
-            this.quantity = 1;
-            {% elif instanceId %}
-            this.loadInstanceWithSupply(instanceId);
-            {% elif supplyId %}
-            this.loadSupply(supplyId);
-            {% else %}
-            this.searchSupplies();
+            this.loadAvailableInstances(this.selectedSupply.id);
             {% endif %}
-        },
-        
-        async loadAvailableInstances(supplyId) {
-            try {
-                const response = await fetch(`/api/supplies/${supplyId}/instances/`);
-                const data = await response.json();
-                this.availableInstances = data.instances;
-            } catch (error) {
-                console.error('Failed to load instances:', error);
-            }
-        },
-        
-        async loadInstanceWithSupply(instanceId) {
-            try {
-                const response = await fetch(`{% url 'api_supplies_search' %}?q=`);
-                const data = await response.json();
-                const supply = data.results.find(s => !s.is_consumable);
-                if (supply) {
-                    this.selectSupply(supply);
-                    this.$nextTick(() => {
-                        this.selectedInstance = this.availableInstances.find(i => i.id == instanceId);
-                    });
-                }
-            } catch (error) {
-                console.error('Failed to load instance:', error);
-            }
+            
+            // Re-initialize icons
+            this.$nextTick(() => { if (window.lucide) lucide.createIcons(); });
+            this.searchSupplies();
         },
         
         async searchSupplies() {
@@ -330,6 +395,7 @@ function requestForm() {
                 const response = await fetch(`{% url 'api_supplies_search' %}?${params}`);
                 const data = await response.json();
                 this.searchResults = data.results;
+                this.$nextTick(() => { if (window.lucide) lucide.createIcons(); });
             } catch (error) {
                 console.error('Search failed:', error);
             } finally {
@@ -337,39 +403,28 @@ function requestForm() {
             }
         },
         
-        async loadSupply(id) {
-            try {
-                const response = await fetch(`{% url 'api_supplies_search' %}?q=`);
-                const data = await response.json();
-                const supply = data.results.find(s => s.id == id);
-                if (supply) {
-                    this.selectSupply(supply);
-                }
-            } catch (error) {
-                console.error('Failed to load supply:', error);
-            }
-        },
-        
         async selectSupply(supply) {
             this.selectedSupply = supply;
             this.selectedInstance = null;
             this.quantity = 1;
-            
-            // Load available instances if equipment
-            if (!supply.is_consumable) {
-                try {
-                    const response = await fetch(`/api/supplies/${supply.id}/instances/`);
-                    const data = await response.json();
-                    this.availableInstances = data.instances;
-                } catch (error) {
-                    console.error('Failed to load instances:', error);
-                }
+            this.loadAvailableInstances(supply.id);
+            this.$nextTick(() => { if (window.lucide) lucide.createIcons(); });
+        },
+        
+        async loadAvailableInstances(supplyId) {
+            if (this.selectedSupply && this.selectedSupply.is_consumable) return;
+            try {
+                const response = await fetch(`/api/supplies/${supplyId}/instances/`);
+                const data = await response.json();
+                this.availableInstances = data.instances;
+                this.$nextTick(() => { if (window.lucide) lucide.createIcons(); });
+            } catch (error) {
+                console.error('Failed to load instances:', error);
             }
         },
         
         async submitRequest() {
             if (!this.canSubmit) return;
-            
             this.submitting = true;
             
             try {
@@ -389,9 +444,7 @@ function requestForm() {
                 
                 if (response.redirected) {
                     window.location.href = response.url;
-                } else {
-                    const html = await response.text();
-                    // Handle HTMX response or redirect
+                } else if (response.ok) {
                     window.location.href = '{% url "my_requests" %}';
                 }
             } catch (error) {
@@ -405,3 +458,4 @@ function requestForm() {
 }
 </script>
 {% endblock %}
+

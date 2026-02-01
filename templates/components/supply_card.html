@@ -4,7 +4,7 @@ Usage: {% include 'components/supply_card.html' with supply=supply_object %}
 {% endcomment %}
 
 <div class="group overflow-hidden rounded-2xl bg-gradient-to-br from-white/5 to-white/[0.02] border border-white/10 backdrop-blur-xl hover:border-primary-500/50 transition-all duration-300 hover:shadow-lg hover:shadow-primary-500/10 cursor-pointer"
-     up-layer="new modal" 
+     up-target="main" up-follow
      up-href="{% url 'supply_detail' supply.id %}">
     
     <!-- Image Container -->

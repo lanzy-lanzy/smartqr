@@ -49,12 +49,12 @@ Usage: {% include 'components/request_card.html' with request=request_object %}
         <div class="flex flex-col gap-2">
             <a href="{% url 'request_detail' request.id %}" 
                class="btn-ghost btn-sm"
-               up-layer="new modal">
+               up-target="main" up-follow>
                 <i data-lucide="eye" class="w-4 h-4"></i>
             </a>
             {% if request.qr_code %}
             <button class="btn-ghost btn-sm" 
-                    up-layer="new modal"
+                    up-target="main" up-follow
                     up-href="{% url 'request_qr' request.id %}">
                 <i data-lucide="qr-code" class="w-4 h-4"></i>
             </button>

@@ -618,6 +618,8 @@
                 {% endif %}
                 
                 {% block content %}{% endblock %}
+                
+                {% block extra_js %}{% endblock %}
             </main>
             
             <!-- Footer -->
@@ -645,25 +647,13 @@
             if (window.lucide) lucide.createIcons();
             
             // Re-initialize Alpine on new fragments
-            // This is crucial for complex x-data components like batchRequestForm
             if (window.Alpine) {
                 // Force Alpine to discover and initialize new x-data elements
                 document.querySelectorAll('[x-data]').forEach(el => {
-                    // Check if Alpine already initialized this element
                     if (!el.__x) {
-                        // Remove old Alpine markers if any
-                        el.removeAttribute('x-init');
-                        // Initialize the element with Alpine
-                        if (window.Alpine.initTree) {
-                            window.Alpine.initTree(el);
-                        }
+                        window.Alpine.initTree(el);
                     }
                 });
-                
-                // Also discover any new elements with x-* directives
-                if (window.Alpine.discover) {
-                    window.Alpine.discover();
-                }
             }
         }
 
@@ -697,6 +687,22 @@
             // Update URL and title (these don't depend on Alpine initialization)
             updateCurrentUrl();
             updatePageTitle();
+            
+            // Reset and setup chart observer for Unpoly navigation
+            console.log('Unpoly fragment inserted: checking for chart functions');
+            
+            if (window.setupChartObserver) {
+                console.log('Base template: Setting up chart observer immediately');
+                window.setupChartObserver();
+            }
+            
+            // Also try to initialize if charts are already in the new fragment
+            if (window.ensureChartsInitialized) {
+                setTimeout(() => {
+                    console.log('Base template: Calling ensureChartsInitialized after 200ms');
+                    window.ensureChartsInitialized();
+                }, 200);
+            }
             
             // Scroll main content to top smoothly
             const main = document.querySelector('main');
@@ -830,13 +836,27 @@
             }
         }
         
-        // Handle HTMX and Unpoly working together
-        document.body.addEventListener('htmx:afterSwap', function() {
+        // Handle HTMX events - reinitialize icons and Alpine after content swap
+        document.addEventListener('htmx:afterSwap', function(event) {
+            // Reinitialize Lucide icons immediately
+            if (window.lucide) {
+                lucide.createIcons();
+            }
             initGlobal();
             updateCurrentUrl();
         });
+        
+        // Also handle htmx:after-settle for inline updates
+        document.addEventListener('htmx:afterSettle', function(event) {
+            if (window.lucide) {
+                lucide.createIcons();
+            }
+        });
+        
+        // Handle htmx:beforeSwap to ensure clean state
+        document.addEventListener('htmx:beforeSwap', function(event) {
+            // Reset any pending Alpine states if needed
+        });
     </script>
-    
-    {% block extra_js %}{% endblock %}
 </body>
 </html>

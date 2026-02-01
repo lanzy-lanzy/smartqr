@@ -383,213 +383,350 @@
 {% endblock %}
 
 {% block extra_js %}
-{% if user.role == 'admin' or user.role == 'gso_staff' %}
 <script>
-// Chart.js Configuration for Dark Mode
-const chartDefaults = {
-    color: 'rgba(148, 163, 184, 1)',
-    borderColor: 'rgba(255, 255, 255, 0.1)',
-    font: {
-        family: 'Inter, system-ui, sans-serif'
-    }
-};
-
-Chart.defaults.color = chartDefaults.color;
-Chart.defaults.borderColor = chartDefaults.borderColor;
-Chart.defaults.font.family = chartDefaults.font.family;
-
+// Always define ensureChartsInitialized for all users (safeguard function for Unpoly)
 let requestsChart, stockChart, categoriesChart, statusChart;
 
-// Initialize charts when page loads
-document.addEventListener('DOMContentLoaded', function() {
-    loadRequestsChart();
-    loadStockChart();
-    loadCategoriesChart();
-    loadStatusChart();
-});
+// Chart.js Configuration for Dark Mode
+if (window.Chart) {
+    Chart.defaults.color = 'rgba(148, 163, 184, 1)';
+    Chart.defaults.borderColor = 'rgba(255, 255, 255, 0.1)';
+    Chart.defaults.font.family = 'Inter, system-ui, sans-serif';
+}
+
+// Function to initialize all charts - defined here so it's always available
+function initializeAllCharts() {
+    console.log('Initializing all charts...');
+    // Check if charts exist in DOM
+    const hasRequestsChart = document.getElementById('requestsChart');
+    const hasStockChart = document.getElementById('stockChart');
+    const hasCategoriesChart = document.getElementById('categoriesChart');
+    const hasStatusChart = document.getElementById('statusChart');
+
+    if (!hasRequestsChart && !hasStockChart && !hasCategoriesChart && !hasStatusChart) {
+        console.warn('No chart elements found in DOM');
+        return;
+    }
+    
+    // Destroy existing chart instances before re-initializing
+    destroyAllCharts();
+
+    if (typeof loadRequestsChart === 'function' && hasRequestsChart) {
+        loadRequestsChart();
+    }
+    if (typeof loadStockChart === 'function' && hasStockChart) {
+        loadStockChart();
+    }
+    if (typeof loadCategoriesChart === 'function' && hasCategoriesChart) {
+        loadCategoriesChart();
+    }
+    if (typeof loadStatusChart === 'function' && hasStatusChart) {
+        loadStatusChart();
+    }
+}
+
+// Destroy all existing chart instances
+function destroyAllCharts() {
+    console.log('Destroying all chart instances...');
+    if (requestsChart) {
+        try {
+            requestsChart.destroy();
+        } catch (e) {
+            console.warn('Error destroying requestsChart:', e);
+        }
+        requestsChart = null;
+    }
+    if (stockChart) {
+        try {
+            stockChart.destroy();
+        } catch (e) {
+            console.warn('Error destroying stockChart:', e);
+        }
+        stockChart = null;
+    }
+    if (categoriesChart) {
+        try {
+            categoriesChart.destroy();
+        } catch (e) {
+            console.warn('Error destroying categoriesChart:', e);
+        }
+        categoriesChart = null;
+    }
+    if (statusChart) {
+        try {
+            statusChart.destroy();
+        } catch (e) {
+            console.warn('Error destroying statusChart:', e);
+        }
+        statusChart = null;
+    }
+}
+
+// Initial call
+initializeAllCharts();
+
+// Chart loading functions (must be outside role check for Unpoly to work)
+// These are defined here for all users so they persist across Unpoly navigations
 
 // Requests Over Time (Line Chart)
 async function loadRequestsChart() {
-    const days = document.getElementById('requestsChartDays').value;
-    const response = await fetch(`{% url 'api_chart_data' %}?type=requests&days=${days}`);
-    const data = await response.json();
-    
-    const ctx = document.getElementById('requestsChart').getContext('2d');
-    
-    if (requestsChart) requestsChart.destroy();
-    
-    requestsChart = new Chart(ctx, {
-        type: 'line',
-        data: {
-            labels: data.labels,
-            datasets: [{
-                label: 'Requests',
-                data: data.data,
-                borderColor: 'rgba(34, 197, 94, 1)',
-                backgroundColor: 'rgba(34, 197, 94, 0.1)',
-                fill: true,
-                tension: 0.4,
-                pointBackgroundColor: 'rgba(34, 197, 94, 1)',
-                pointBorderColor: '#fff',
-                pointBorderWidth: 2,
-                pointRadius: 4,
-                pointHoverRadius: 6
-            }]
-        },
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            plugins: {
-                legend: { display: false }
-            },
-            scales: {
-                x: {
-                    grid: { display: false },
-                    ticks: { maxTicksLimit: 7 }
-                },
-                y: {
-                    beginAtZero: true,
-                    grid: { color: 'rgba(255, 255, 255, 0.05)' },
-                    ticks: { precision: 0 }
-                }
-            },
-            interaction: {
-                intersect: false,
-                mode: 'index'
-            }
+    try {
+        console.log('loadRequestsChart() called');
+        const chartElement = document.getElementById('requestsChart');
+        if (!chartElement) {
+            console.warn('requestsChart element not found in DOM');
+            return;
         }
-    });
+        console.log('requestsChart element found, fetching data...');
+        
+        const daysSelect = document.getElementById('requestsChartDays');
+        const days = daysSelect ? daysSelect.value : '30';
+        
+        const response = await fetch(`/api/chart-data/?type=requests&days=${days}`);
+        if (!response.ok) {
+            console.error('Failed to fetch chart data:', response.status);
+            return;
+        }
+        
+        const data = await response.json();
+        
+        const ctx = chartElement.getContext('2d');
+        
+        if (requestsChart) requestsChart.destroy();
+        
+        requestsChart = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: data.labels,
+                datasets: [{
+                    label: 'Requests',
+                    data: data.data,
+                    borderColor: 'rgba(34, 197, 94, 1)',
+                    backgroundColor: 'rgba(34, 197, 94, 0.1)',
+                    fill: true,
+                    tension: 0.4,
+                    pointBackgroundColor: 'rgba(34, 197, 94, 1)',
+                    pointBorderColor: '#fff',
+                    pointBorderWidth: 2,
+                    pointRadius: 4,
+                    pointHoverRadius: 6
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { display: false }
+                },
+                scales: {
+                    x: {
+                        grid: { display: false },
+                        ticks: { maxTicksLimit: 7 }
+                    },
+                    y: {
+                        beginAtZero: true,
+                        grid: { color: 'rgba(255, 255, 255, 0.05)' },
+                        ticks: { precision: 0 }
+                    }
+                },
+                interaction: {
+                    intersect: false,
+                    mode: 'index'
+                }
+            }
+        });
+    } catch (error) {
+        console.error('Error loading requests chart:', error);
+    }
 }
 
 // Stock Status (Doughnut Chart)
 async function loadStockChart() {
-    const response = await fetch(`{% url 'api_chart_data' %}?type=stock`);
-    const data = await response.json();
-    
-    const ctx = document.getElementById('stockChart').getContext('2d');
-    
-    if (stockChart) stockChart.destroy();
-    
-    stockChart = new Chart(ctx, {
-        type: 'doughnut',
-        data: {
-            labels: data.labels,
-            datasets: [{
-                data: data.data,
-                backgroundColor: data.colors || ['#22c55e', '#f59e0b', '#ef4444'],
-                borderWidth: 0,
-                hoverOffset: 8
-            }]
-        },
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            cutout: '65%',
-            plugins: {
-                legend: {
-                    position: 'bottom',
-                    labels: {
-                        padding: 20,
-                        usePointStyle: true,
-                        pointStyle: 'circle'
+    try {
+        const chartElement = document.getElementById('stockChart');
+        if (!chartElement) {
+            console.warn('stockChart element not found');
+            return;
+        }
+        
+        const response = await fetch(`/api/chart-data/?type=stock`);
+        if (!response.ok) {
+            console.error('Failed to fetch stock chart data:', response.status);
+            return;
+        }
+        
+        const data = await response.json();
+        
+        const ctx = chartElement.getContext('2d');
+        
+        if (stockChart) stockChart.destroy();
+        
+        stockChart = new Chart(ctx, {
+            type: 'doughnut',
+            data: {
+                labels: data.labels,
+                datasets: [{
+                    data: data.data,
+                    backgroundColor: data.colors || ['#22c55e', '#f59e0b', '#ef4444'],
+                    borderWidth: 0,
+                    hoverOffset: 8
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                cutout: '65%',
+                plugins: {
+                    legend: {
+                        position: 'bottom',
+                        labels: {
+                            padding: 20,
+                            usePointStyle: true,
+                            pointStyle: 'circle'
+                        }
                     }
                 }
             }
-        }
-    });
+        });
+    } catch (error) {
+        console.error('Error loading stock chart:', error);
+    }
 }
 
 // Requests by Category (Bar Chart)
 async function loadCategoriesChart() {
-    const response = await fetch(`{% url 'api_chart_data' %}?type=categories`);
-    const data = await response.json();
-    
-    const ctx = document.getElementById('categoriesChart').getContext('2d');
-    
-    if (categoriesChart) categoriesChart.destroy();
-    
-    categoriesChart = new Chart(ctx, {
-        type: 'bar',
-        data: {
-            labels: data.labels,
-            datasets: [{
-                label: 'Requests',
-                data: data.data,
-                backgroundColor: 'rgba(99, 102, 241, 0.8)',
-                borderRadius: 6,
-                borderSkipped: false,
-                maxBarThickness: 40
-            }]
-        },
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            plugins: {
-                legend: { display: false }
+    try {
+        const chartElement = document.getElementById('categoriesChart');
+        if (!chartElement) {
+            console.warn('categoriesChart element not found');
+            return;
+        }
+        
+        const response = await fetch(`/api/chart-data/?type=categories`);
+        if (!response.ok) {
+            console.error('Failed to fetch categories chart data:', response.status);
+            return;
+        }
+        
+        const data = await response.json();
+        
+        const ctx = chartElement.getContext('2d');
+        
+        if (categoriesChart) categoriesChart.destroy();
+        
+        categoriesChart = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: data.labels,
+                datasets: [{
+                    label: 'Requests',
+                    data: data.data,
+                    backgroundColor: 'rgba(99, 102, 241, 0.8)',
+                    borderRadius: 6,
+                    borderSkipped: false,
+                    maxBarThickness: 40
+                }]
             },
-            scales: {
-                x: {
-                    grid: { display: false },
-                    ticks: { maxRotation: 45, minRotation: 45 }
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { display: false }
                 },
-                y: {
-                    beginAtZero: true,
-                    grid: { color: 'rgba(255, 255, 255, 0.05)' },
-                    ticks: { precision: 0 }
+                scales: {
+                    x: {
+                        grid: { display: false },
+                        ticks: { maxRotation: 45, minRotation: 45 }
+                    },
+                    y: {
+                        beginAtZero: true,
+                        grid: { color: 'rgba(255, 255, 255, 0.05)' },
+                        ticks: { precision: 0 }
+                    }
                 }
             }
-        }
-    });
+        });
+    } catch (error) {
+        console.error('Error loading categories chart:', error);
+    }
 }
 
 // Request Status (Pie Chart)
 async function loadStatusChart() {
-    const response = await fetch(`{% url 'api_chart_data' %}?type=status`);
-    const data = await response.json();
-    
-    const ctx = document.getElementById('statusChart').getContext('2d');
-    
-    if (statusChart) statusChart.destroy();
-    
-    const statusColors = {
-        'Pending': '#f59e0b',
-        'Approved': '#6366f1',
-        'Rejected': '#ef4444',
-        'Issued': '#22c55e',
-        'Partially Returned': '#14b8a6',
-        'Returned': '#64748b',
-        'Cancelled': '#71717a'
-    };
-    
-    const colors = data.labels.map(label => statusColors[label] || '#64748b');
-    
-    statusChart = new Chart(ctx, {
-        type: 'pie',
-        data: {
-            labels: data.labels,
-            datasets: [{
-                data: data.data,
-                backgroundColor: colors,
-                borderWidth: 0,
-                hoverOffset: 8
-            }]
-        },
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            plugins: {
-                legend: {
-                    position: 'right',
-                    labels: {
-                        padding: 15,
-                        usePointStyle: true,
-                        pointStyle: 'circle'
+    try {
+        const chartElement = document.getElementById('statusChart');
+        if (!chartElement) {
+            console.warn('statusChart element not found');
+            return;
+        }
+        
+        const response = await fetch(`/api/chart-data/?type=status`);
+        if (!response.ok) {
+            console.error('Failed to fetch status chart data:', response.status);
+            return;
+        }
+        
+        const data = await response.json();
+        
+        const ctx = chartElement.getContext('2d');
+        
+        if (statusChart) statusChart.destroy();
+        
+        const statusColors = {
+            'Pending': '#f59e0b',
+            'Approved': '#6366f1',
+            'Rejected': '#ef4444',
+            'Issued': '#22c55e',
+            'Partially Returned': '#14b8a6',
+            'Returned': '#64748b',
+            'Cancelled': '#71717a'
+        };
+        
+        const colors = data.labels.map(label => statusColors[label] || '#64748b');
+        
+        statusChart = new Chart(ctx, {
+            type: 'pie',
+            data: {
+                labels: data.labels,
+                datasets: [{
+                    data: data.data,
+                    backgroundColor: colors,
+                    borderWidth: 0,
+                    hoverOffset: 8
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'right',
+                        labels: {
+                            padding: 15,
+                            usePointStyle: true,
+                            pointStyle: 'circle'
+                        }
                     }
                 }
             }
-        }
-    });
+        });
+    } catch (error) {
+        console.error('Error loading status chart:', error);
+    }
 }
+</script>
+
+{% if user.role == 'admin' or user.role == 'gso_staff' %}
+<script>
+// Redefine ensureChartsInitialized for global access if needed
+window.ensureChartsInitialized = initializeAllCharts;
+
+// Handle dropdown change
+document.addEventListener('change', function(event) {
+    if (event.target && event.target.id === 'requestsChartDays') {
+        loadRequestsChart();
+    }
+}, { once: false });
 </script>
 {% endif %}
 {% endblock %}

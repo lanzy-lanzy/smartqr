@@ -11,7 +11,7 @@ from django.utils import timezone
 
 try:
     from reportlab.lib import colors
-    from reportlab.lib.pagesizes import letter, A4
+    from reportlab.lib.pagesizes import letter, A4, landscape
     from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
     from reportlab.lib.units import inch
     from reportlab.platypus import (
@@ -195,20 +195,24 @@ def generate_borrowing_report(borrowed_items, user=None, filename="borrowing_rep
         return HttpResponse("reportlab not installed", status=500)
     
     buffer = io.BytesIO()
-    doc = SimpleDocTemplate(buffer, pagesize=letter, topMargin=0.5*inch, bottomMargin=0.5*inch)
+    # Use landscape Letter for maximum horizontal space
+    doc = SimpleDocTemplate(buffer, pagesize=landscape(letter), topMargin=0.5*inch, bottomMargin=0.5*inch)
     styles = get_styles()
     elements = []
     
     # Title
     title = "Borrowing History Report"
-    if user:
+    subtitle = "Smart Supply Management System"
+    timestamp = f"Generated on {timezone.now().strftime('%B %d, %Y at %I:%M %p')}"
+    
+    # If it's a specific user's report (not an admin viewing all), add their name
+    if user and user.role != 'admin':
         title = f"Borrowing History - {user.get_full_name()}"
+    
     elements.append(Paragraph(title, styles['ReportTitle']))
-    elements.append(Paragraph(
-        f"Generated on {timezone.now().strftime('%B %d, %Y at %I:%M %p')}",
-        styles['ReportSubtitle']
-    ))
-    elements.append(Spacer(1, 20))
+    elements.append(Paragraph(subtitle, styles['ReportSubtitle']))
+    elements.append(Paragraph(timestamp, styles['ReportSubtitle']))
+    elements.append(Spacer(1, 10))
     
     # Summary
     total = borrowed_items.count()
@@ -235,21 +239,32 @@ def generate_borrowing_report(borrowed_items, user=None, filename="borrowing_rep
     elements.append(Spacer(1, 30))
     
     # Borrowing table
-    elements.append(Paragraph("Borrowing Details", styles['SectionTitle']))
+    elements.append(Paragraph("Detailed Transaction History", styles['SectionTitle']))
+    
+    # Create cell style for table content to allow wrapping
+    cell_style = ParagraphStyle(
+        'TableCell',
+        parent=styles['Normal'],
+        fontSize=9,
+        leading=11,
+    )
     
     data = [['Equipment', 'Borrower', 'Borrowed', 'Due Date', 'Returned', 'Status']]
-    for item in borrowed_items[:100]:  # Limit to 100 items
+    for item in borrowed_items[:200]:  # Increased limit for systematic reports
         status = item.get_return_status_display() if item.returned_at else ('Overdue' if item.is_overdue else 'Active')
+        
+        # Use Paragraphs in cells that need wrapping
         data.append([
-            item.equipment_instance.instance_code,
-            item.borrower.get_full_name()[:20],
+            Paragraph(item.equipment_instance.instance_code, cell_style),
+            Paragraph(item.borrower.get_full_name(), cell_style),
             item.borrowed_at.strftime('%m/%d/%Y'),
             item.return_deadline.strftime('%m/%d/%Y'),
             item.returned_at.strftime('%m/%d/%Y') if item.returned_at else '-',
-            status,
+            Paragraph(status, cell_style),
         ])
     
-    table = Table(data, colWidths=[1.2*inch, 1.5*inch, 0.9*inch, 0.9*inch, 0.9*inch, 0.9*inch])
+    # Total width for landscape letter is 11.0 inches. With 0.5 inch margins, we have 10.0 inches.
+    table = Table(data, colWidths=[1.2*inch, 2.0*inch, 1.1*inch, 1.1*inch, 1.1*inch, 3.5*inch])
     table.setStyle(create_table_style())
     elements.append(table)
     

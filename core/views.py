@@ -342,6 +342,24 @@ def request_create(request):
         
         supply = get_object_or_404(Supply, pk=supply_id, is_active=True)
         
+        # Availability Check
+        if instance_id:
+            # Check specific unit availability
+            instance = get_object_or_404(EquipmentInstance, pk=instance_id, supply=supply)
+            if not instance.is_available:
+                messages.error(request, f'Item {instance.instance_code} is currently {instance.get_status_display().lower()} and not available for borrowing.')
+                return redirect('request_create')
+        elif not supply.is_consumable:
+            # Check if any units are available
+            if supply.available_quantity < quantity:
+                messages.error(request, f'Sorry, there are not enough available units of {supply.name} at the moment.')
+                return redirect('request_create')
+        elif supply.is_consumable:
+            # Check consumable stock
+            if supply.quantity < quantity:
+                messages.error(request, f'Sorry, only {supply.quantity} {supply.unit} of {supply.name} are in stock.')
+                return redirect('request_create')
+        
         # Create request
         supply_request = SupplyRequest.objects.create(
             requester=request.user,
@@ -833,7 +851,17 @@ def issue_item(request):
         })
 
     # Handle Equipment (Existing Logic)
-    instance = get_object_or_404(EquipmentInstance, pk=instance_id, status=EquipmentInstance.Status.AVAILABLE)
+    try:
+        instance = EquipmentInstance.objects.get(pk=instance_id)
+    except EquipmentInstance.DoesNotExist:
+        return JsonResponse({'success': False, 'error': 'Equipment instance not found'}, status=404)
+        
+    if instance.status != EquipmentInstance.Status.AVAILABLE:
+        status_display = instance.get_status_display().lower()
+        return JsonResponse({
+            'success': False, 
+            'error': f'Item {instance.instance_code} is currently {status_display} and not available for borrowing.'
+        }, status=400)
     
     # Create borrowed item
     borrowed_item = BorrowedItem.objects.create(
@@ -1394,6 +1422,35 @@ def audit_log_view(request):
 # Reports & Export
 # =============================================================================
 
+def get_date_range_filters(request, date_field):
+    """Helper to get Q filters for date range from request params."""
+    start_date = request.GET.get('start_date')
+    end_date = request.GET.get('end_date')
+    filters = Q()
+    
+    if start_date:
+        filters &= Q(**{f"{date_field}__gte": start_date})
+    if end_date:
+        # Add 1 day to end_date to include the entire day
+        try:
+            end_dt = datetime.strptime(end_date, '%Y-%m-%d') + timedelta(days=1)
+            filters &= Q(**{f"{date_field}__lt": end_dt})
+        except:
+            filters &= Q(**{f"{date_field}__lte": end_date})
+            
+    return filters
+
+
+@login_required
+def reports_list(request):
+    """Reports dashboard (admin only)."""
+    if request.user.role != User.Role.ADMIN:
+        messages.error(request, 'Access denied.')
+        return redirect('dashboard')
+    
+    return render(request, 'admin/reports.html')
+
+
 @login_required
 def report_inventory(request):
     """Generate inventory PDF report."""
@@ -1403,7 +1460,10 @@ def report_inventory(request):
         messages.error(request, 'Access denied.')
         return redirect('dashboard')
     
-    supplies = Supply.objects.filter(is_active=True).select_related('category').order_by('category', 'name')
+    filters = Q(is_active=True)
+    filters &= get_date_range_filters(request, 'created_at')
+    
+    supplies = Supply.objects.filter(filters).select_related('category').order_by('category', 'name')
     return generate_inventory_report(supplies)
 
 
@@ -1412,13 +1472,15 @@ def report_borrowing(request):
     """Generate borrowing history PDF report."""
     from .reports import generate_borrowing_report
     
+    filters = get_date_range_filters(request, 'borrowed_at')
+    
     if request.user.role in [User.Role.ADMIN, User.Role.GSO_STAFF]:
-        borrowed_items = BorrowedItem.objects.select_related(
+        borrowed_items = BorrowedItem.objects.filter(filters).select_related(
             'equipment_instance', 'borrower', 'request'
         ).order_by('-borrowed_at')
     else:
         borrowed_items = BorrowedItem.objects.filter(
-            borrower=request.user
+            filters, borrower=request.user
         ).select_related('equipment_instance', 'request').order_by('-borrowed_at')
     
     return generate_borrowing_report(borrowed_items, user=request.user)
@@ -1468,7 +1530,10 @@ def export_supplies(request):
         messages.error(request, 'Access denied.')
         return redirect('dashboard')
     
-    supplies = Supply.objects.filter(is_active=True).select_related('category')
+    filters = Q(is_active=True)
+    filters &= get_date_range_filters(request, 'created_at')
+    
+    supplies = Supply.objects.filter(filters).select_related('category')
     return export_supplies_csv(supplies)
 
 
@@ -1481,7 +1546,10 @@ def export_equipment(request):
         messages.error(request, 'Access denied.')
         return redirect('dashboard')
     
-    instances = EquipmentInstance.objects.filter(is_active=True).select_related('supply', 'last_borrowed_by')
+    filters = Q(is_active=True)
+    filters &= get_date_range_filters(request, 'created_at')
+    
+    instances = EquipmentInstance.objects.filter(filters).select_related('supply', 'last_borrowed_by')
     return export_equipment_csv(instances)
 
 
@@ -1490,10 +1558,12 @@ def export_requests(request):
     """Export requests to CSV."""
     from .bulk import export_requests_csv
     
+    filters = get_date_range_filters(request, 'requested_at')
+    
     if request.user.role in [User.Role.ADMIN, User.Role.GSO_STAFF]:
-        requests_qs = SupplyRequest.objects.select_related('supply', 'requester', 'requester__department', 'reviewed_by')
+        requests_qs = SupplyRequest.objects.filter(filters).select_related('supply', 'requester', 'requester__department', 'reviewed_by')
     else:
-        requests_qs = SupplyRequest.objects.filter(requester=request.user).select_related('supply', 'reviewed_by')
+        requests_qs = SupplyRequest.objects.filter(filters, requester=request.user).select_related('supply', 'reviewed_by')
     
     return export_requests_csv(requests_qs)
 
@@ -1503,12 +1573,14 @@ def export_borrowed(request):
     """Export borrowed items to CSV."""
     from .bulk import export_borrowed_items_csv
     
+    filters = get_date_range_filters(request, 'borrowed_at')
+    
     if request.user.role in [User.Role.ADMIN, User.Role.GSO_STAFF]:
-        items = BorrowedItem.objects.select_related(
+        items = BorrowedItem.objects.filter(filters).select_related(
             'equipment_instance', 'equipment_instance__supply', 'borrower', 'borrower__department', 'request'
         )
     else:
-        items = BorrowedItem.objects.filter(borrower=request.user).select_related(
+        items = BorrowedItem.objects.filter(filters, borrower=request.user).select_related(
             'equipment_instance', 'equipment_instance__supply', 'request'
         )
     
@@ -1830,35 +1902,56 @@ def batch_request_create(request):
                 supply_id = int(parts[1])
                 quantity = int(parts[2]) if len(parts) > 2 else 1
                 
-                supply = Supply.objects.get(pk=supply_id, is_active=True)
-                
-                supply_request = SupplyRequest.objects.create(
-                    requester=request.user,
-                    supply=supply,
-                    quantity=quantity,
-                    purpose=purpose,
-                    priority=priority,
-                    needed_by=needed_by if needed_by else None,
-                    batch_group_id=batch_id,
-                )
-                created_requests.append(supply_request)
+                try:
+                    supply = Supply.objects.get(pk=supply_id, is_active=True)
+                    
+                    # Availability Check
+                    if supply.is_consumable:
+                        if supply.quantity < quantity:
+                            messages.warning(request, f'Insufficient stock for {supply.name}. Available: {supply.quantity}')
+                            continue
+                    else:
+                        if supply.available_quantity < quantity:
+                            messages.warning(request, f'Not enough available units for {supply.name}. Available: {supply.available_quantity}')
+                            continue
+                            
+                    supply_request = SupplyRequest.objects.create(
+                        requester=request.user,
+                        supply=supply,
+                        quantity=quantity,
+                        purpose=purpose,
+                        priority=priority,
+                        needed_by=needed_by if needed_by else None,
+                        batch_group_id=batch_id,
+                    )
+                    created_requests.append(supply_request)
+                except Supply.DoesNotExist:
+                    continue
                 
             elif parts[0] == 'instance':
                 # Equipment instance request
                 instance_id = int(parts[1])
-                instance = EquipmentInstance.objects.get(pk=instance_id, is_active=True)
-                
-                supply_request = SupplyRequest.objects.create(
-                    requester=request.user,
-                    supply=instance.supply,
-                    quantity=1,
-                    purpose=purpose,
-                    priority=priority,
-                    needed_by=needed_by if needed_by else None,
-                    requested_instance=instance,
-                    batch_group_id=batch_id,
-                )
-                created_requests.append(supply_request)
+                try:
+                    instance = EquipmentInstance.objects.get(pk=instance_id, is_active=True)
+                    
+                    # Availability Check
+                    if instance.status != EquipmentInstance.Status.AVAILABLE:
+                        messages.warning(request, f'Item {instance.instance_code} is no longer available.')
+                        continue
+                        
+                    supply_request = SupplyRequest.objects.create(
+                        requester=request.user,
+                        supply=instance.supply,
+                        quantity=1,
+                        purpose=purpose,
+                        priority=priority,
+                        needed_by=needed_by if needed_by else None,
+                        requested_instance=instance,
+                        batch_group_id=batch_id,
+                    )
+                    created_requests.append(supply_request)
+                except EquipmentInstance.DoesNotExist:
+                    continue
         
         # Update user analytics
         analytics, _ = RequestorBorrowerAnalytics.objects.get_or_create(user=request.user)

@@ -3,7 +3,7 @@
 
 {% block content %}
 <!-- Supply Detail Modal Content -->
-<div class="p-0 max-w-2xl bg-slate-900/95 backdrop-blur-xl border border-white/10 rounded-2xl overflow-hidden shadow-2xl animate-fadeIn lg:mx-auto">
+<div class="p-0 w-full lg:max-w-5xl mx-auto bg-slate-900/95 backdrop-blur-xl border border-white/10 rounded-2xl overflow-hidden shadow-2xl animate-fadeIn">
     <!-- Header with Gradient Backdrop -->
     <div class="relative p-8 pb-6 bg-gradient-to-br from-indigo-500/10 via-transparent to-transparent flex items-start gap-6">
         <div class="relative group">
@@ -107,8 +107,7 @@
         <div class="flex gap-4 pt-6 border-t border-white/10">
             {% if supply.available_quantity > 0 %}
             <a href="{% url 'request_create' %}?supply={{ supply.id }}" 
-               class="flex-1 px-6 py-3.5 bg-gradient-to-r from-green-600 to-green-500 hover:from-green-500 hover:to-green-400 rounded-2xl font-bold text-white transition-all duration-300 inline-flex items-center justify-center gap-2 shadow-lg shadow-green-500/20 hover:-translate-y-1"
-               up-dismiss>
+               class="flex-1 px-6 py-3.5 bg-gradient-to-r from-green-600 to-green-500 hover:from-green-500 hover:to-green-400 rounded-2xl font-bold text-white transition-all duration-300 inline-flex items-center justify-center gap-2 shadow-lg shadow-green-500/20 hover:-translate-y-1">
                 <i data-lucide="file-plus" class="w-5 h-5"></i>
                 Initiate Request
             </a>
@@ -119,9 +118,9 @@
             </button>
             {% endif %}
             
-            <button class="px-6 py-3.5 bg-white/5 border border-white/10 hover:bg-white/10 rounded-2xl font-bold text-slate-400 transition-all duration-300" up-dismiss>
-                Close
-            </button>
+            <a href="javascript:history.back()" up-back class="px-6 py-3.5 bg-white/5 border border-white/10 hover:bg-white/10 rounded-2xl font-bold text-slate-400 transition-all duration-300 inline-flex items-center justify-center">
+                Back
+            </a>
         </div>
     </div>
 </div>

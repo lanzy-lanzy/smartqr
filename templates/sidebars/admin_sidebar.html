@@ -82,6 +82,30 @@
                 <i data-lucide="building" class="w-5 h-5"></i>
                 <span class="text-sm font-semibold transition-opacity" :class="sidebarOpen ? 'opacity-100' : 'opacity-0 lg:hidden'">Departments</span>
             </a>
+
+            <!-- Analytics -->
+            <a href="{% url 'analytics' %}" up-target="main" up-follow
+               class="flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-200"
+               :class="currentUrl.startsWith('{% url 'analytics' %}') ? 'bg-red-500/20 text-red-300' : 'text-slate-400 hover:bg-white/5 hover:text-white'">
+                <i data-lucide="bar-chart-2" class="w-5 h-5"></i>
+                <span class="text-sm font-semibold transition-opacity" :class="sidebarOpen ? 'opacity-100' : 'opacity-0 lg:hidden'">Analytics</span>
+            </a>
+
+            <!-- Reports -->
+            <a href="{% url 'reports' %}" up-target="main" up-follow
+               class="flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-200"
+               :class="currentUrl.startsWith('{% url 'reports' %}') ? 'bg-red-500/20 text-red-300' : 'text-slate-400 hover:bg-white/5 hover:text-white'">
+                <i data-lucide="file-bar-chart" class="w-5 h-5"></i>
+                <span class="text-sm font-semibold transition-opacity" :class="sidebarOpen ? 'opacity-100' : 'opacity-0 lg:hidden'">Reports</span>
+            </a>
+
+            <!-- Audit Log -->
+            <a href="{% url 'audit_log' %}" up-target="main" up-follow
+               class="flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-200"
+               :class="currentUrl.startsWith('{% url 'audit_log' %}') ? 'bg-red-500/20 text-red-300' : 'text-slate-400 hover:bg-white/5 hover:text-white'">
+                <i data-lucide="history" class="w-5 h-5"></i>
+                <span class="text-sm font-semibold transition-opacity" :class="sidebarOpen ? 'opacity-100' : 'opacity-0 lg:hidden'">Audit Log</span>
+            </a>
             
             <div class="h-px bg-white/10 my-3"></div>
             

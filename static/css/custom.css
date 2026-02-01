@@ -542,44 +542,82 @@ html.dark select {
 }
 
 /* =============================================================================
-   Unpoly Component Styling
+   Unpoly Component Styling (Improved Modal Appearance)
+   - Creates a centered frosted overlay
+   - Constrains modal width and applies consistent rounded corners
+   - Adds elevated shadow and subtle vignette for focus
    ============================================================================= */
 
-.up-modal-dialog {
-    background: transparent !important;
-    border: none !important;
-    box-shadow: none !important;
-    max-width: none !important;
-    padding: 0 !important;
-}
-
+/* Reset Unpoly low-level defaults so our Tailwind markup controls appearance */
+up-layer,
+up-modal,
+.up-modal-viewport,
+.up-modal-dialog,
+.up-modal-box,
 .up-modal-content {
+    /* Force full width capability so Tailwind can control internal sizing */
+    width: 100% !important;
+    max-width: none !important;
     background: transparent !important;
     border: none !important;
-    box-shadow: none !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    outline: none !important;
 }
 
+/* Backdrop (the area behind the modal dialog) */
+[up-backdrop],
 .up-modal-viewport {
-    background: rgba(2, 6, 23, 0.4) !important;
-    backdrop-filter: blur(8px) !important;
-    -webkit-backdrop-filter: blur(8px) !important;
+    background: rgba(2, 6, 23, 0.72) !important;
+    backdrop-filter: blur(10px) saturate(120%) !important;
+    -webkit-backdrop-filter: blur(10px) saturate(120%) !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    padding: 2rem !important;
+    z-index: 9999 !important;
 }
 
-.up-drawer-viewport {
-    background: rgba(2, 6, 23, 0.4) !important;
-    backdrop-filter: blur(8px) !important;
-    -webkit-backdrop-filter: blur(8px) !important;
+/* Modal content wrapper: allow the fragment's root element to control sizing */
+.up-modal-viewport>*,
+.up-modal-viewport *:first-child {
+    max-width: 95vw !important;
+    width: auto !important;
+    border-radius: 1.5rem !important;
+    overflow: hidden !important;
+    box-shadow: 0 40px 100px rgba(2, 6, 23, 0.8), 0 10px 30px rgba(2, 6, 23, 0.6) !important;
+    background-clip: padding-box !important;
 }
 
-.up-drawer-content {
+/* Base modal background - ensures no white areas show through */
+.up-modal-viewport>* {
     background: #0f172a !important;
-    border-left: 1px solid rgba(255, 255, 255, 0.1) !important;
+    /* Slate-900 baseline */
 }
 
-/* Close button positioning for Unpoly modals */
-.up-modal-close {
+/* Hide Unpoly's built-in close controls so our templates provide dismiss buttons */
+.up-modal-close,
+[up-close] {
     display: none !important;
-    /* We use our own themed close buttons */
+    opacity: 0 !important;
+    pointer-events: none !important;
+}
+
+/* Allow the modal fragment to animate; keep animations smooth and subtle */
+.up-modal-viewport .animate-fadeIn,
+.up-modal-viewport .fade-in {
+    animation: fadeIn 260ms ease-out !important;
+}
+
+/* Small screens: ensure modal fills nicely while keeping rounded corners */
+@media (max-width: 640px) {
+
+    .up-modal-viewport>*,
+    .up-modal-viewport *:first-child {
+        width: calc(100vw - 2rem) !important;
+        max-width: calc(100vw - 2rem) !important;
+        border-radius: 0.75rem !important;
+    }
 }
 
 /* =============================================================================

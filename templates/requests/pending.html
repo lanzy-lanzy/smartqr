@@ -145,7 +145,7 @@
                         
                         <a href="{% url 'batch_request_detail' req.batch_group_id %}" 
                            class="inline-flex items-center justify-center gap-2 px-3 py-1.5 text-xs rounded-lg font-medium transition-all duration-200 cursor-pointer bg-white/5 border border-white/10 text-slate-300 hover:bg-white/10"
-                           up-layer="new modal">
+                           up-target="main" up-follow>
                              <i data-lucide="layout-list" class="w-4 h-4"></i>
                              View Details
                          </a>
@@ -173,7 +173,7 @@
                         
                         <a href="{% url 'request_detail' req.id %}" 
                            class="inline-flex items-center justify-center gap-2 px-3 py-1.5 text-xs rounded-lg font-medium transition-all duration-200 cursor-pointer bg-white/5 border border-white/10 text-slate-300 hover:bg-white/10"
-                           up-layer="new modal">
+                           up-target="main" up-follow>
                              <i data-lucide="eye" class="w-4 h-4"></i>
                          </a>
                     {% endif %}

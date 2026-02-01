@@ -143,14 +143,14 @@
                     {% if req.is_batch %}
                     <a href="{% url 'batch_request_detail' req.batch_group_id %}" 
                        class="inline-flex items-center justify-center gap-2 px-4 py-2.5 text-sm rounded-xl font-bold transition-all duration-200 cursor-pointer bg-indigo-600 hover:bg-indigo-500 text-white shadow-lg shadow-indigo-600/20 flex-1 lg:flex-none"
-                       up-layer="new modal">
+                       up-target="main" up-follow>
                          <i data-lucide="layout-list" class="w-4 h-4"></i>
                          View Batch
                      </a>
                     {% else %}
                     <a href="{% url 'request_detail' req.id %}" 
                        class="inline-flex items-center justify-center gap-2 px-3 py-1.5 text-xs rounded-lg font-medium transition-all duration-200 cursor-pointer bg-white/5 border border-white/10 text-slate-300 hover:bg-white/10 flex-1 lg:flex-none"
-                       up-layer="new modal">
+                       up-target="main" up-follow>
                          <i data-lucide="eye" class="w-4 h-4"></i>
                          <span class="lg:hidden">View</span>
                      </a>
@@ -158,7 +158,7 @@
                      
                      {% if req.qr_code and req.status in 'approved,issued,partially_returned' %}
                      <button class="inline-flex items-center justify-center gap-2 px-3 py-1.5 text-xs rounded-lg font-medium transition-all duration-200 cursor-pointer bg-white/5 border border-white/10 text-slate-300 hover:bg-white/10 flex-1 lg:flex-none"
-                             up-layer="new modal"
+                             up-target="main" up-follow
                              up-href="{% if req.is_batch %}{% url 'batch_request_detail' req.batch_group_id %}{% else %}{% url 'request_qr' req.id %}{% endif %}">
                          <i data-lucide="qr-code" class="w-4 h-4"></i>
                          <span class="lg:hidden">QR</span>

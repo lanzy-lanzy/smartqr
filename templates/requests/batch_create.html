@@ -4,31 +4,36 @@
 {% block page_title %}New Batch Request{% endblock %}
 
 {% block content %}
-<div x-data="batchRequestForm()" class="max-w-7xl mx-auto space-y-8 animate-fadeIn pb-24">
-    <!-- Header Section -->
-    <div class="flex flex-col md:flex-row md:items-end justify-between gap-6">
-        <div>
-            <nav class="flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest text-slate-500 mb-4">
-                <a href="{% url 'dashboard' %}" class="hover:text-green-400 transition-colors">Dashboard</a>
-                <i data-lucide="chevron-right" class="w-3 h-3"></i>
-                <a href="{% url 'my_requests' %}" class="hover:text-green-400 transition-colors">Requests</a>
-                <i data-lucide="chevron-right" class="w-3 h-3 text-slate-700"></i>
-                <span class="text-slate-300">Batch Request</span>
-            </nav>
-            <h1 class="text-4xl font-extrabold text-white tracking-tight">Request <span class="text-transparent bg-clip-text bg-gradient-to-r from-green-400 to-emerald-500">Multiple Items</span></h1>
-            <p class="text-slate-400 mt-2 text-lg">Curate and submit a batch of supplies and equipment in one go.</p>
-        </div>
-        <div class="flex items-center gap-4">
-            <a href="{% url 'my_requests' %}" class="px-6 py-3 bg-white/5 hover:bg-white/10 border border-white/10 rounded-2xl text-slate-300 font-bold transition-all flex items-center gap-2">
-                Abandon
-            </a>
-            <button type="button" 
-                    @click="submitForm()"
-                    :disabled="selectedItems.length === 0"
-                    class="px-8 py-3 bg-gradient-to-r from-green-600 to-emerald-500 hover:from-green-500 hover:to-emerald-400 disabled:from-slate-800 disabled:to-slate-800 disabled:text-slate-500 disabled:cursor-not-allowed rounded-2xl font-bold text-white transition-all shadow-xl shadow-green-500/20 hover:-translate-y-1 flex items-center gap-3">
-                <i data-lucide="send" class="w-5 h-5"></i>
-                Submit Request (<span x-text="selectedItems.length"></span>)
-            </button>
+<div x-data="batchRequestForm()" class="min-h-screen bg-slate-950 text-slate-200 selection:bg-indigo-500/30">
+    <!-- Background Decorative Elements -->
+    <div class="fixed inset-0 overflow-hidden pointer-events-none">
+        <div class="absolute -top-[10%] -left-[10%] w-[40%] h-[40%] bg-indigo-500/10 blur-[120px] rounded-full animate-pulse"></div>
+        <div class="absolute top-[20%] -right-[5%] w-[30%] h-[30%] bg-emerald-500/5 blur-[100px] rounded-full"></div>
+    </div>
+
+    <div class="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 space-y-10 animate-fadeIn pb-32">
+        <!-- Header Section -->
+        <div class="flex flex-col lg:flex-row lg:items-end justify-between gap-8">
+            <div class="space-y-4">
+                <nav class="flex items-center gap-2 text-[10px] font-bold uppercase tracking-[0.2em] text-slate-500">
+                    <a href="{% url 'dashboard' %}" class="hover:text-emerald-400 transition-all duration-300">Dashboard</a>
+                    <i data-lucide="chevron-right" class="w-3 h-3 opacity-30"></i>
+                    <a href="{% url 'my_requests' %}" class="hover:text-emerald-400 transition-all duration-300">Requests</a>
+                    <i data-lucide="chevron-right" class="w-3 h-3 opacity-30"></i>
+                    <span class="text-indigo-400/80 bg-indigo-500/5 px-2 py-0.5 rounded border border-indigo-500/10">Batch Request</span>
+                </nav>
+                
+                <div>
+                    <h1 class="text-5xl font-black text-white tracking-tighter mb-3 leading-tight">
+                        Request <span class="text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 via-teal-500 to-indigo-500 drop-shadow-2xl">Multiple Items</span>
+                    </h1>
+                    <p class="text-slate-400 text-lg font-medium max-w-2xl leading-relaxed">
+                        Curate and submit a batch of supplies and equipment in one go with our <span class="text-slate-200">intelligent allocation system</span>.
+                    </p>
+                </div>
+            </div>
+
+            <!-- Buttons removed as they are redundant to the sidebar Finalize Request button -->
         </div>
     </div>
 
@@ -38,31 +43,35 @@
         <!-- Selection Area -->
         <div class="xl:col-span-3 space-y-8">
             <!-- Filter & Search Bar -->
-            <div class="bg-slate-900/50 backdrop-blur-xl border border-white/10 rounded-3xl p-6 shadow-2xl">
-                <div class="flex flex-col lg:flex-row gap-6">
+            <div class="relative bg-slate-900/40 backdrop-blur-2xl border border-white/10 rounded-[2rem] p-7 shadow-2xl overflow-hidden group">
+                <!-- Inner Glow -->
+                <div class="absolute inset-0 bg-gradient-to-br from-white/[0.02] to-transparent pointer-events-none"></div>
+                
+                <div class="relative flex flex-col lg:flex-row gap-8 items-center">
                     <!-- Categories -->
-                    <div class="flex-1 overflow-x-auto custom-scrollbar-h pb-2">
-                        <div class="flex gap-2 whitespace-nowrap">
+                    <div class="flex-1 w-full overflow-x-auto custom-scrollbar-h pb-2">
+                        <div class="flex items-center gap-3 whitespace-nowrap">
                             <button type="button" @click="activeCategory = 'all'"
-                                    :class="activeCategory === 'all' ? 'bg-green-500 text-slate-950 font-bold' : 'bg-white/5 text-slate-400 hover:bg-white/10'"
-                                    class="px-5 py-2.5 rounded-xl text-xs uppercase tracking-widest transition-all">
-                                All
+                                    :class="activeCategory === 'all' ? 'bg-emerald-500 text-slate-950 font-black shadow-lg shadow-emerald-500/20 scale-105' : 'bg-white/5 text-slate-400 hover:bg-white/10 hover:text-slate-200'"
+                                    class="px-6 py-3 rounded-xl text-[10px] font-bold uppercase tracking-[0.2em] transition-all duration-300 border border-white/5">
+                                All Items
                             </button>
+                            <div class="w-px h-6 bg-white/10 mx-2"></div>
                             <button type="button" @click="activeCategory = 'consumables'"
-                                    :class="activeCategory === 'consumables' ? 'bg-green-500 text-slate-950 font-bold' : 'bg-white/5 text-slate-400 hover:bg-white/10'"
-                                    class="px-5 py-2.5 rounded-xl text-xs uppercase tracking-widest transition-all">
+                                    :class="activeCategory === 'consumables' ? 'bg-indigo-500 text-white font-black shadow-lg shadow-indigo-500/20 scale-105' : 'bg-white/5 text-slate-400 hover:bg-white/10'"
+                                    class="px-6 py-3 rounded-xl text-[10px] font-bold uppercase tracking-[0.2em] transition-all duration-300 border border-white/5">
                                 Consumables
                             </button>
                             <button type="button" @click="activeCategory = 'equipment'"
-                                    :class="activeCategory === 'equipment' ? 'bg-green-500 text-slate-950 font-bold' : 'bg-white/5 text-slate-400 hover:bg-white/10'"
-                                    class="px-5 py-2.5 rounded-xl text-xs uppercase tracking-widest transition-all">
+                                    :class="activeCategory === 'equipment' ? 'bg-indigo-500 text-white font-black shadow-lg shadow-indigo-500/20 scale-105' : 'bg-white/5 text-slate-400 hover:bg-white/10'"
+                                    class="px-6 py-3 rounded-xl text-[10px] font-bold uppercase tracking-[0.2em] transition-all duration-300 border border-white/5">
                                 Equipment
                             </button>
-                            <div class="w-px h-8 bg-white/10 mx-2"></div>
+                            <div class="w-px h-6 bg-white/10 mx-2"></div>
                             {% for category in categories %}
                             <button type="button" @click="activeCategory = 'cat-{{ category.id }}'"
-                                    :class="activeCategory === 'cat-{{ category.id }}' ? 'bg-emerald-500 text-slate-950 font-bold' : 'bg-white/5 text-slate-400 hover:bg-white/10'"
-                                    class="px-5 py-2.5 rounded-xl text-xs uppercase tracking-widest transition-all">
+                                    :class="activeCategory === 'cat-{{ category.id }}' ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/50 font-black' : 'bg-white/5 text-slate-500 border-white/5 hover:bg-white/10 hover:text-slate-300'"
+                                    class="px-5 py-3 rounded-xl text-[10px] font-bold uppercase tracking-[0.15em] transition-all duration-300 border">
                                 {{ category.name }}
                             </button>
                             {% endfor %}
@@ -70,11 +79,12 @@
                     </div>
                     
                     <!-- Search -->
-                    <div class="lg:w-80 relative group">
-                        <i data-lucide="search" class="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-500 group-focus-within:text-green-400 transition-colors"></i>
+                    <div class="w-full lg:w-96 relative group/search">
+                        <div class="absolute inset-0 bg-emerald-500/5 blur-xl group-focus-within/search:bg-emerald-500/10 transition-all duration-500 rounded-2xl"></div>
+                        <i data-lucide="search" class="absolute left-5 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-500 group-focus-within/search:text-emerald-400 transition-colors duration-300 z-10"></i>
                         <input type="text" x-model="searchQuery"
-                               placeholder="Filter items..."
-                               class="w-full pl-12 pr-4 py-3.5 bg-white/5 border border-white/10 rounded-2xl text-white placeholder-slate-600 focus:outline-none focus:ring-2 focus:ring-green-500/20 focus:border-green-500 transition-all">
+                               placeholder="Search intelligent inventory..."
+                               class="relative z-0 w-full pl-14 pr-6 py-4 bg-slate-950/50 border border-white/10 rounded-2xl text-white placeholder-slate-600 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500/50 transition-all duration-300 text-sm font-medium">
                     </div>
                 </div>
             </div>
@@ -82,41 +92,52 @@
             <!-- Items Grid -->
             <div class="space-y-10">
                 <!-- Consumables -->
-                <div x-show="activeCategory === 'all' || activeCategory === 'consumables' || categoryMatches('consumables')">
-                    <div class="flex items-center gap-4 mb-6">
-                        <div class="h-px bg-white/10 flex-1"></div>
-                        <h3 class="text-[10px] font-bold text-slate-500 uppercase tracking-[0.3em] flex items-center gap-3">
-                            <i data-lucide="package" class="w-4 h-4 text-green-500"></i>
+                <div x-show="activeCategory === 'all' || activeCategory === 'consumables' || categoryMatches('consumables')"
+                     class="space-y-8 animate-fadeIn">
+                    <div class="flex items-center gap-6">
+                        <div class="h-px bg-gradient-to-r from-transparent via-white/10 to-transparent flex-1"></div>
+                        <h3 class="text-[10px] font-black text-slate-500 uppercase tracking-[0.4em] flex items-center gap-4 bg-slate-900/50 px-6 py-2 rounded-full border border-white/5">
+                            <i data-lucide="package" class="w-4 h-4 text-emerald-400"></i>
                             Consumable Supplies
                         </h3>
-                        <div class="h-px bg-white/10 flex-1"></div>
+                        <div class="h-px bg-gradient-to-r from-transparent via-white/10 to-transparent flex-1"></div>
                     </div>
-                    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                         {% for supply in consumable_supplies %}
                         <div x-show="matchesSearch('{{ supply.name|escapejs }}') && matchesCategory('cat-{{ supply.category.id }}')"
-                             @click="toggleSupply({{ supply.id }}, '{{ supply.name|escapejs }}', {{ supply.quantity }})"
-                             :class="isSelected('supply', {{ supply.id }}) ? 'bg-green-500/10 border-green-500 shadow-lg shadow-green-500/5' : ({{ supply.quantity }} === 0 ? 'bg-slate-900/40 border-red-500/30 opacity-60' : 'bg-slate-900/40 border-white/5 hover:border-white/20 hover:bg-white/5')"
-                             class="group relative p-6 rounded-3xl border transition-all duration-300 cursor-pointer overflow-hidden">
-                            <!-- Selection Glow -->
-                            <div x-show="isSelected('supply', {{ supply.id }})" class="absolute top-0 right-0 w-32 h-32 bg-green-500/20 blur-[60px] -mr-16 -mt-16 animate-pulse"></div>
+                             @click="{{ supply.quantity }} > 0 ? toggleSupply({{ supply.id }}, '{{ supply.name|escapejs }}', {{ supply.quantity }}) : null"
+                             :class="{
+                                 'bg-emerald-500/10 border-emerald-500/50 shadow-2xl shadow-emerald-500/10 scale-[1.02]': isSelected('supply', {{ supply.id }}),
+                                 'bg-slate-900/40 border-white/5 hover:border-white/20 hover:bg-white/5 cursor-pointer': {{ supply.quantity }} > 0 && !isSelected('supply', {{ supply.id }}),
+                                 'bg-slate-900/40 border-red-500/20 opacity-40 cursor-not-allowed grayscale-[0.8]': {{ supply.quantity }} === 0
+                             }"
+                             class="group relative p-7 rounded-[2rem] border transition-all duration-500 overflow-hidden">
                             
-                            <div class="relative flex items-start gap-4">
-                                <div :class="isSelected('supply', {{ supply.id }}) ? 'bg-green-500 text-slate-950 shadow-lg shadow-green-500/20' : 'bg-slate-800 text-slate-500'"
-                                     class="w-14 h-14 rounded-2xl flex items-center justify-center flex-shrink-0 transition-all duration-300">
-                                    <i data-lucide="package" class="w-7 h-7"></i>
+                            <!-- Selection Halo -->
+                            <div x-show="isSelected('supply', {{ supply.id }})" 
+                                 class="absolute -top-20 -right-20 w-48 h-48 bg-emerald-500/20 blur-[80px] rounded-full animate-pulse z-0"></div>
+                            
+                            <div class="relative z-10 flex items-start gap-5">
+                                <div :class="isSelected('supply', {{ supply.id }}) ? 'bg-emerald-500 text-slate-950 shadow-2xl shadow-emerald-500/30 rotate-3' : 'bg-slate-800/80 text-slate-500 group-hover:bg-slate-800'"
+                                     class="w-16 h-16 rounded-2xl flex items-center justify-center flex-shrink-0 transition-all duration-500 group-hover:scale-110">
+                                    <i data-lucide="package" class="w-8 h-8"></i>
                                 </div>
-                                <div class="flex-1 min-w-0">
-                                    <h4 class="font-bold text-white text-lg leading-tight group-hover:text-green-400 transition-colors">{{ supply.name }}</h4>
-                                    <p class="text-xs text-slate-500 font-bold uppercase tracking-wider mt-1">{{ supply.category.name }}</p>
-                                    <div class="mt-4 flex items-center gap-2">
+                                <div class="flex-1 min-w-0 pt-1">
+                                    <h4 class="font-bold text-white text-xl leading-tight group-hover:text-emerald-400 transition-colors duration-300 truncate">{{ supply.name }}</h4>
+                                    <p class="text-[10px] text-slate-500 font-extrabold uppercase tracking-widest mt-2">{{ supply.category.name }}</p>
+                                    
+                                    <div class="mt-5 flex items-center gap-2">
                                          {% if supply.quantity > 0 %}
-                                         <span class="text-[10px] font-bold px-2 py-1 rounded-lg bg-green-500/20 text-green-400 border border-green-500/30">
-                                             {{ supply.quantity }} in stock
-                                         </span>
+                                         <div class="flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+                                             <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+                                             <span class="text-[10px] font-bold uppercase">{{ supply.quantity }} in stock</span>
+                                         </div>
                                          {% else %}
-                                         <span class="text-[10px] font-bold px-2 py-1 rounded-lg bg-red-500/20 text-red-400 border border-red-500/30">
-                                             Out of stock
-                                         </span>
+                                         <div class="flex items-center gap-1.5 px-3 py-1 rounded-full bg-red-500/10 text-red-400 border border-red-500/20">
+                                             <span class="w-1.5 h-1.5 rounded-full bg-red-500"></span>
+                                             <span class="text-[10px] font-bold uppercase">Out of stock</span>
+                                         </div>
                                          {% endif %}
                                      </div>
                                 </div>
@@ -124,20 +145,20 @@
 
                             <!-- Quantity Selection UI -->
                             <div x-show="isSelected('supply', {{ supply.id }})" 
-                                 x-transition:enter="transition ease-out duration-200"
-                                 x-transition:enter-start="opacity-0 translate-y-2"
-                                 class="relative mt-6 pt-6 border-t border-green-500/20 flex items-center justify-between"
+                                 x-transition:enter="transition ease-out duration-300"
+                                 x-transition:enter-start="opacity-0 translate-y-4"
+                                 class="relative z-10 mt-8 pt-6 border-t border-emerald-500/20 flex items-center justify-between"
                                  @click.stop>
-                                <span class="text-xs font-bold text-green-400 uppercase tracking-widest">Quantity</span>
-                                <div class="flex items-center bg-slate-950/50 rounded-xl p-1 border border-white/10">
+                                <span class="text-[10px] font-black text-emerald-400 uppercase tracking-[0.2em]">Select Quantity</span>
+                                <div class="flex items-center bg-slate-950/80 rounded-2xl p-1.5 border border-white/10 shadow-inner">
                                     <button type="button" @click="decrementQuantity('supply', {{ supply.id }})"
-                                            class="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-white/10 text-slate-400 transition-colors">
-                                        <i data-lucide="minus" class="w-4 h-4"></i>
+                                            class="w-10 h-10 flex items-center justify-center rounded-xl hover:bg-white/10 text-slate-400 active:scale-90 transition-all">
+                                        <i data-lucide="minus-circle" class="w-5 h-5"></i>
                                     </button>
-                                    <span class="w-10 text-center text-white font-bold" x-text="getQuantity('supply', {{ supply.id }})"></span>
+                                    <span class="w-12 text-center text-white font-black text-lg" x-text="getQuantity('supply', {{ supply.id }})"></span>
                                     <button type="button" @click="incrementQuantity('supply', {{ supply.id }}, {{ supply.quantity }})"
-                                            class="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-white/10 text-slate-400 transition-colors">
-                                        <i data-lucide="plus" class="w-4 h-4"></i>
+                                            class="w-10 h-10 flex items-center justify-center rounded-xl hover:bg-white/10 text-slate-400 active:scale-90 transition-all">
+                                        <i data-lucide="plus-circle" class="w-5 h-5"></i>
                                     </button>
                                 </div>
                             </div>
@@ -147,43 +168,56 @@
                 </div>
 
                 <!-- Equipment -->
-                <div x-show="activeCategory === 'all' || activeCategory === 'equipment' || categoryMatches('equipment')">
-                    <div class="flex items-center gap-4 mb-6">
-                        <div class="h-px bg-white/10 flex-1"></div>
-                        <h3 class="text-[10px] font-bold text-slate-500 uppercase tracking-[0.3em] flex items-center gap-3">
+                <div x-show="activeCategory === 'all' || activeCategory === 'equipment' || categoryMatches('equipment')"
+                     class="space-y-8 animate-fadeIn pt-4">
+                    <div class="flex items-center gap-6">
+                        <div class="h-px bg-gradient-to-r from-transparent via-white/10 to-transparent flex-1"></div>
+                        <h3 class="text-[10px] font-black text-slate-500 uppercase tracking-[0.4em] flex items-center gap-4 bg-slate-900/50 px-6 py-2 rounded-full border border-white/5">
                             <i data-lucide="monitor" class="w-4 h-4 text-indigo-400"></i>
-                            Equipment Units
+                            Asset Allocation
                         </h3>
-                        <div class="h-px bg-white/10 flex-1"></div>
+                        <div class="h-px bg-gradient-to-r from-transparent via-white/10 to-transparent flex-1"></div>
                     </div>
-                    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                         {% for instance in equipment_instances %}
                         <div x-show="matchesSearch('{{ instance.supply.name|escapejs }} {{ instance.instance_code|escapejs }}') && matchesCategory('cat-{{ instance.supply.category.id }}')"
                              @click="toggleInstance({{ instance.id }}, '{{ instance.supply.name|escapejs }}', '{{ instance.instance_code|escapejs }}')"
-                             :class="isSelected('instance', {{ instance.id }}) ? 'bg-indigo-500/10 border-indigo-500 shadow-lg shadow-indigo-500/5' : 'bg-slate-900/40 border-white/5 hover:border-white/20 hover:bg-white/5'"
-                             class="group relative p-6 rounded-3xl border transition-all duration-300 cursor-pointer overflow-hidden">
+                             :class="isSelected('instance', {{ instance.id }}) ? 'bg-indigo-500/10 border-indigo-500/50 shadow-2xl shadow-indigo-500/10 scale-[1.02]' : 'bg-slate-900/40 border-white/5 hover:border-white/20 hover:bg-white/5 shadow-lg'"
+                             class="group relative p-7 rounded-[2rem] border transition-all duration-500 cursor-pointer overflow-hidden">
                             
-                            <div x-show="isSelected('instance', {{ instance.id }})" class="absolute top-0 right-0 w-32 h-32 bg-indigo-500/20 blur-[60px] -mr-16 -mt-16"></div>
+                            <!-- Selection Halo -->
+                            <div x-show="isSelected('instance', {{ instance.id }})" 
+                                 class="absolute -top-20 -right-20 w-48 h-48 bg-indigo-500/20 blur-[80px] rounded-full animate-pulse z-0"></div>
                             
-                            <div class="relative flex items-start gap-4">
-                                <div :class="isSelected('instance', {{ instance.id }}) ? 'bg-indigo-500 text-slate-950 shadow-lg shadow-indigo-500/20' : 'bg-slate-800 text-slate-500'"
-                                     class="w-14 h-14 rounded-2xl flex items-center justify-center flex-shrink-0 transition-all duration-300">
-                                    <i data-lucide="monitor" class="w-7 h-7"></i>
+                            <div class="relative z-10 flex items-start gap-5">
+                                <div :class="isSelected('instance', {{ instance.id }}) ? 'bg-indigo-500 text-slate-950 shadow-2xl shadow-indigo-500/30 -rotate-3' : 'bg-slate-800/80 text-slate-500 group-hover:bg-slate-800'"
+                                     class="w-16 h-16 rounded-2xl flex items-center justify-center flex-shrink-0 transition-all duration-500 group-hover:scale-110">
+                                    <i data-lucide="monitor" class="w-8 h-8"></i>
                                 </div>
-                                <div class="flex-1 min-w-0">
-                                    <h4 class="font-bold text-white text-lg leading-tight group-hover:text-indigo-400 transition-colors">{{ instance.supply.name }}</h4>
-                                    <p class="text-sm text-slate-400 mt-1 font-mono">{{ instance.instance_code }}</p>
-                                    <div class="mt-4 flex flex-wrap gap-2">
-                                        <span class="text-[10px] font-bold px-2 py-1 rounded-lg bg-indigo-500/10 text-indigo-400 border border-indigo-500/10 uppercase tracking-widest">
+                                <div class="flex-1 min-w-0 pt-1">
+                                    <h4 class="font-bold text-white text-xl leading-tight group-hover:text-indigo-400 transition-colors duration-300 truncate">{{ instance.supply.name }}</h4>
+                                    <p class="text-[11px] font-mono text-indigo-400/80 mt-2 bg-indigo-500/5 px-2 py-0.5 rounded-lg border border-indigo-500/10 inline-block">{{ instance.instance_code }}</p>
+                                    
+                                    <div class="mt-5 flex flex-wrap gap-2">
+                                        <span class="text-[9px] font-black px-3 py-1.5 rounded-full bg-white/5 text-slate-500 border border-white/5 uppercase tracking-widest group-hover:text-slate-400 transition-colors">
                                             {{ instance.supply.category.name }}
                                         </span>
                                         {% if instance.condition %}
-                                        <span class="text-[10px] font-bold px-2 py-1 rounded-lg bg-white/5 text-slate-500 uppercase tracking-widest">
+                                        <span class="text-[9px] font-black px-3 py-1.5 rounded-full bg-indigo-500/5 text-indigo-300/50 border border-indigo-500/10 uppercase tracking-widest">
                                             {{ instance.condition }}
                                         </span>
                                         {% endif %}
                                     </div>
                                 </div>
+                            </div>
+
+                            <!-- Indicator for selection -->
+                            <div x-show="isSelected('instance', {{ instance.id }})"
+                                 x-transition:enter="transition duration-500"
+                                 x-transition:enter-start="opacity-0 scale-50"
+                                 class="absolute top-4 right-4 w-6 h-6 rounded-full bg-indigo-500 flex items-center justify-center shadow-lg shadow-indigo-500/50 rotate-12">
+                                <i data-lucide="check" class="w-3.5 h-3.5 text-slate-950"></i>
                             </div>
                         </div>
                         {% endfor %}
@@ -196,36 +230,50 @@
         <div class="xl:col-span-1">
             <div class="sticky top-24 space-y-6">
                 <!-- Cart Card -->
-                <div class="bg-slate-900 border border-white/10 rounded-3xl shadow-2xl overflow-hidden">
-                    <div class="p-6 bg-gradient-to-br from-green-500/10 to-transparent border-b border-white/5">
+                <div class="bg-slate-900/60 backdrop-blur-3xl border border-white/10 rounded-[2.5rem] shadow-2xl overflow-hidden relative group/sidebar">
+                    <!-- Sidebar Glow -->
+                    <div class="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-transparent via-emerald-500/50 to-transparent opacity-50"></div>
+                    
+                    <div class="p-8 bg-gradient-to-b from-white/[0.03] to-transparent border-b border-white/5">
                         <div class="flex items-center justify-between">
-                            <h3 class="text-lg font-bold text-white flex items-center gap-3">
-                                <i data-lucide="shopping-cart" class="w-5 h-5 text-green-400"></i>
-                                Selection
-                            </h3>
-                            <span class="px-3 py-1 rounded-full bg-green-500/20 text-green-400 text-xs font-bold" x-text="selectedItems.length"></span>
+                            <div class="flex items-center gap-4">
+                                <div class="w-10 h-10 rounded-xl bg-emerald-500/10 flex items-center justify-center border border-emerald-500/20">
+                                    <i data-lucide="shopping-basket" class="w-5 h-5 text-emerald-400"></i>
+                                </div>
+                                <h3 class="text-xl font-black text-white tracking-tight">Selection</h3>
+                            </div>
+                            <span class="px-4 py-1.5 rounded-full bg-slate-950 text-emerald-400 text-xs font-black border border-white/5 shadow-inner" x-text="selectedItems.length"></span>
                         </div>
                     </div>
 
-                    <div class="p-6 space-y-4">
+                    <div class="p-8 space-y-6">
                         <!-- Empty State -->
-                        <div x-show="selectedItems.length === 0" class="py-12 text-center">
-                            <i data-lucide="package-open" class="w-12 h-12 text-slate-700 mx-auto mb-4"></i>
-                            <p class="text-slate-500 text-sm italic">Nothing selected yet.<br>Click items on the left to add.</p>
+                        <div x-show="selectedItems.length === 0" class="py-16 text-center space-y-4">
+                            <div class="relative inline-block">
+                                <div class="absolute inset-0 bg-slate-800 blur-2xl opacity-50 rounded-full"></div>
+                                <i data-lucide="package-search" class="relative w-16 h-16 text-slate-800 mx-auto opacity-50"></i>
+                            </div>
+                            <p class="text-slate-500 text-sm font-medium leading-relaxed italic">
+                                Your intelligence batch is empty.<br>Select assets from the grid.
+                            </p>
                         </div>
 
                         <!-- Items List -->
-                        <div x-show="selectedItems.length > 0" class="space-y-3 max-h-[400px] overflow-y-auto custom-scrollbar pr-1">
+                        <div x-show="selectedItems.length > 0" class="space-y-4 max-h-[400px] overflow-y-auto custom-scrollbar pr-2">
                             <template x-for="item in selectedItems" :key="item.key">
-                                <div class="group p-3 bg-white/5 border border-white/5 rounded-2xl flex items-center justify-between hover:bg-white/10 hover:border-white/10 transition-all">
-                                    <div class="min-w-0 flex-1">
-                                        <p class="text-sm font-bold text-white truncate" x-text="item.name"></p>
-                                        <p class="text-[10px] text-slate-500 font-bold uppercase tracking-widest" 
-                                           x-text="item.type === 'supply' ? 'Quantity: ' + item.quantity : item.code"></p>
+                                <div class="group p-4 bg-white/5 border border-white/5 rounded-2xl flex items-center justify-between hover:bg-white/10 hover:border-white/10 transition-all duration-300 transform hover:-translate-x-1">
+                                    <div class="min-w-0 flex-1 pr-4">
+                                        <p class="text-sm font-bold text-white truncate group-hover:text-emerald-400 transition-colors" x-text="item.name"></p>
+                                        <div class="flex items-center gap-2 mt-1.5">
+                                            <span class="text-[9px] font-black uppercase tracking-[0.1em] px-2 py-0.5 rounded bg-white/5 text-slate-500" 
+                                               x-text="item.type === 'supply' ? 'Consumable' : 'Asset'"></span>
+                                            <span class="text-[9px] font-black uppercase tracking-[0.1em] text-indigo-400" 
+                                               x-text="item.type === 'supply' ? 'Qty: ' + item.quantity : item.code"></span>
+                                        </div>
                                     </div>
                                     <button type="button" @click="removeItem(item.key)"
-                                            class="w-8 h-8 flex items-center justify-center rounded-xl bg-red-500/10 text-red-400 hover:bg-red-500 hover:text-white transition-all">
-                                        <i data-lucide="x" class="w-4 h-4"></i>
+                                            class="w-10 h-10 flex items-center justify-center rounded-xl bg-red-500/10 text-red-500 hover:bg-red-500 hover:text-white transition-all duration-300 shadow-lg hover:shadow-red-500/20 active:scale-90">
+                                        <i data-lucide="trash-2" class="w-4 h-4"></i>
                                     </button>
                                     <input type="hidden" name="selected_items" :value="item.value">
                                 </div>
@@ -234,31 +282,47 @@
 
                         <!-- Form Details -->
                         <div x-show="selectedItems.length > 0" 
-                             x-transition:enter="transition ease-out duration-300"
-                             class="pt-6 border-t border-white/10 space-y-6">
-                            <div>
-                                <label class="block text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-3">Usage Purpose *</label>
-                                <textarea name="purpose" required rows="3"
-                                          class="w-full bg-slate-950/50 border border-white/10 rounded-2xl p-4 text-white text-sm placeholder-slate-700 focus:ring-2 focus:ring-green-500/20 focus:border-green-500 transition-all resize-none"
-                                          placeholder="Why do you need these?"></textarea>
+                             x-transition:enter="transition ease-out duration-500"
+                             x-transition:enter-start="opacity-0 translate-y-8"
+                             class="pt-8 border-t border-white/10 space-y-8">
+                            
+                            <div class="space-y-4">
+                                <label class="block text-[10px] font-black text-slate-500 uppercase tracking-[0.3em] pl-1">Batch Operations Purpose *</label>
+                                <textarea name="purpose" required rows="4"
+                                          class="w-full bg-slate-950/80 border border-white/10 rounded-2xl p-5 text-white text-sm placeholder-slate-700 focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500/40 transition-all duration-300 resize-none shadow-inner"
+                                          placeholder="Specify the operational requirement for this batch..."></textarea>
                             </div>
 
-                            <div class="grid grid-cols-2 gap-4">
-                                <div>
-                                    <label class="block text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-3">Priority</label>
-                                    <select name="priority" 
-                                            class="w-full bg-slate-950/50 border border-white/10 rounded-2xl px-4 py-3 text-white text-xs focus:ring-2 focus:ring-green-500/20 transition-all">
-                                        {% for value, label in priority_choices %}
-                                        <option value="{{ value }}" {% if value == 'normal' %}selected{% endif %} class="bg-slate-950">{{ label }}</option>
-                                        {% endfor %}
-                                    </select>
+                            <div class="grid grid-cols-1 gap-6">
+                                <div class="space-y-4">
+                                    <label class="block text-[10px] font-black text-slate-500 uppercase tracking-[0.3em] pl-1">Operational Priority</label>
+                                    <div class="relative group/select">
+                                        <select name="priority" 
+                                                class="w-full bg-slate-950/80 border border-white/10 rounded-2xl pl-5 pr-10 py-4 text-white text-xs font-bold focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500/40 transition-all duration-300 appearance-none shadow-inner cursor-pointer">
+                                            {% for value, label in priority_choices %}
+                                            <option value="{{ value }}" {% if value == 'normal' %}selected{% endif %} class="bg-slate-950">{{ label|upper }}</option>
+                                            {% endfor %}
+                                        </select>
+                                        <i data-lucide="chevron-down" class="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500 group-focus-within/select:text-emerald-400 pointer-events-none transition-colors"></i>
+                                    </div>
                                 </div>
-                                <div>
-                                    <label class="block text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-3">Needed By</label>
-                                    <input type="date" name="needed_by" min="{{ 'now'|date:'Y-m-d' }}"
-                                           class="w-full bg-slate-950/50 border border-white/10 rounded-2xl px-4 py-3 text-white text-xs focus:ring-2 focus:ring-green-500/20 transition-all [color-scheme:dark]">
+                                <div class="space-y-4">
+                                    <label class="block text-[10px] font-black text-slate-500 uppercase tracking-[0.3em] pl-1">Required Completion</label>
+                                    <div class="relative group/date">
+                                        <input type="date" name="needed_by" min="{{ 'now'|date:'Y-m-d' }}"
+                                               class="w-full bg-slate-950/80 border border-white/10 rounded-2xl px-5 py-4 text-white text-xs font-bold focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500/40 transition-all duration-300 [color-scheme:dark] shadow-inner cursor-pointer">
+                                        <i data-lucide="calendar" class="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500 group-focus-within/date:text-emerald-400 pointer-events-none transition-colors hidden sm:block"></i>
+                                    </div>
                                 </div>
                             </div>
+
+                            <!-- Bottom Action -->
+                            <button type="button" 
+                                    @click="submitForm()"
+                                    class="w-full py-5 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 rounded-2xl font-black text-white transition-all duration-500 shadow-2xl shadow-emerald-500/20 hover:shadow-emerald-500/40 hover:-translate-y-1 flex items-center justify-center gap-3 border border-white/10 text-sm tracking-widest uppercase">
+                                <i data-lucide="shield-check" class="w-5 h-5"></i>
+                                Finalize Request
+                            </button>
                         </div>
                     </div>
                 </div>
