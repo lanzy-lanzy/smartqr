@@ -7,24 +7,42 @@
 {% block content %}
 <div class="max-w-2xl mx-auto fade-in">
     <!-- Back Button -->
-    <a href="{% url 'categories' %}" up-follow class="inline-flex items-center gap-2 text-slate-500 hover:text-slate-300 transition-colors mb-6">
+    <a href="{% url 'categories' %}" class="inline-flex items-center gap-2 text-slate-500 hover:text-slate-300 transition-colors mb-6">
         <i data-lucide="arrow-left" class="w-4 h-4"></i>
         <span class="text-sm">Back to Categories</span>
     </a>
 
-    <div class="rounded-lg border border-slate-800 bg-slate-950/50 overflow-hidden">
-        <div class="p-6 border-b border-slate-800">
-            <h2 class="text-2xl font-semibold text-white">{{ title }}</h2>
-            <p class="text-slate-500 text-sm mt-1">Organize and manage your inventory</p>
+    <div class="glass-card">
+        <div class="mb-6">
+            <h2 class="text-2xl font-bold text-white mb-1">{{ title }}</h2>
+            <p class="text-slate-500 text-sm">{% if category %}Update category details{% else %}Create a new category{% endif %}</p>
         </div>
 
-        <form method="POST" class="p-6 space-y-5"
+        <!-- Main Category Form -->
+        <form method="POST" {% if category %}action="{% url 'category_edit' category.id %}"{% endif %} class="space-y-5"
               x-data="{ 
-                name: '{{ category.name|default:'' }}',
+                name: '{{ category.name|default:''|escapejs }}',
                 selectedIcon: '{{ category.icon|default:'package' }}',
                 isMaterial: {% if category.is_material %}true{% else %}false{% endif %},
-                description: `{{ category.description|default:'' }}`,
+                description: `{{ category.description|default:''|escapejs }}`,
                 isSuggesting: false,
+                showIconPicker: false,
+                iconSearch: '',
+                commonIcons: [
+                    'package', 'box', 'archive', 'briefcase',
+                    'laptop', 'monitor', 'printer', 'hard-drive', 'cpu', 'keyboard', 'mouse',
+                    'sofa', 'chair', 'bed', 'lamp',
+                    'file-text', 'folder', 'scissors', 'pen-tool',
+                    'wrench', 'hammer', 'tool',
+                    'truck', 'car', 'shopping-cart',
+                    'zap', 'battery', 'power',
+                    'camera', 'video', 'headphones',
+                    'coffee', 'utensils'
+                ],
+                filteredIcons() {
+                    if (!this.iconSearch) return this.commonIcons;
+                    return this.commonIcons.filter(icon => icon.includes(this.iconSearch.toLowerCase()));
+                },
                 async suggestCategory() {
                     if (!this.name) {
                         alert('Please enter a category name first.');
@@ -38,7 +56,6 @@
                             this.selectedIcon = result.data.icon;
                             this.isMaterial = result.data.is_material;
                             this.description = result.data.description;
-                            // Refresh Lucide icons if any were added dynamically
                             setTimeout(() => { if(window.lucide) lucide.createIcons(); }, 100);
                         } else if (result.error) {
                             alert('AI Error: ' + result.error);
@@ -49,80 +66,149 @@
                         this.isSuggesting = false;
                     }
                 }
-              }">
+              }"
+              @click.away="showIconPicker = false">
             {% csrf_token %}
             
             <!-- Name -->
             <div>
-                <label for="name" class="block text-sm font-medium text-white mb-2">Category Name</label>
+                <label for="name" class="label">
+                    <i data-lucide="type" class="w-4 h-4 inline mr-1"></i>
+                    Category Name
+                </label>
                 <div class="flex gap-2">
                     <input type="text" name="name" id="name" required x-model="name"
-                           class="flex-1 px-4 py-2.5 rounded-lg bg-slate-900/50 border border-slate-800 text-white placeholder-slate-600 transition-all focus:outline-none focus:border-slate-700"
+                           class="input flex-1"
                            placeholder="e.g., IT Equipment, Office Supplies">
                     <button type="button" @click="suggestCategory()" :disabled="isSuggesting"
-                            class="px-4 py-2.5 rounded-lg bg-slate-900/50 border border-slate-800 text-slate-300 hover:border-slate-700 transition-all flex items-center gap-2 whitespace-nowrap disabled:opacity-50">
-                        <i data-lucide="sparkles" class="w-4 h-4" :class="isSuggesting ? 'animate-pulse' : ''"></i>
-                        <span class="text-sm" x-text="isSuggesting ? 'Suggesting...' : 'Suggest'"></span>
+                            class="group inline-flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium text-violet-300 bg-violet-500/10 border border-violet-500/20 hover:bg-violet-500/20 hover:border-violet-500/40 hover:text-violet-200 transition-all duration-200 hover:-translate-y-0.5 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:translate-y-0">
+                        <i data-lucide="sparkles" class="w-4 h-4" :class="isSuggesting ? 'animate-pulse' : 'group-hover:rotate-12 transition-transform'"></i>
+                        <span x-text="isSuggesting ? 'Analyzing...' : 'AI Suggest'"></span>
                     </button>
                 </div>
             </div>
 
             <!-- Icon -->
             <div>
-                <label for="icon" class="block text-sm font-medium text-white mb-2">Icon</label>
+                <label class="label" style="display: flex; align-items: center; gap: 0.25rem;">
+                    <i data-lucide="image" class="w-4 h-4"></i>
+                    <span>Icon</span>
+                </label>
                 <div class="flex gap-3">
-                    <input type="text" name="icon" id="icon" required x-model="selectedIcon"
-                           class="flex-1 px-4 py-2.5 rounded-lg bg-slate-900/50 border border-slate-800 text-white placeholder-slate-600 transition-all focus:outline-none focus:border-slate-700"
-                           placeholder="e.g., laptop, printer, package">
-                    <div class="w-12 h-12 rounded-lg bg-slate-900 border border-slate-800 flex items-center justify-center flex-shrink-0">
+                    <div class="flex-1 relative">
+                        <input type="text" name="icon" id="icon" required x-model="selectedIcon"
+                               @focus="showIconPicker = true"
+                               class="input"
+                               placeholder="Click to select an icon">
+                        <button type="button" 
+                                @click="showIconPicker = !showIconPicker"
+                                class="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 hover:text-white transition-colors">
+                            <i data-lucide="chevron-down" class="w-4 h-4" :class="showIconPicker ? 'rotate-180' : ''"></i>
+                        </button>
+                    </div>
+                    <div class="w-12 h-12 rounded-lg bg-slate-800 border border-slate-700 flex items-center justify-center flex-shrink-0">
                         <template x-if="selectedIcon">
                             <i :key="selectedIcon" :data-lucide="selectedIcon" class="w-5 h-5 text-slate-400"></i>
                         </template>
                     </div>
                 </div>
-                <p class="text-xs text-slate-500 mt-1">Common: laptop, printer, package, hard-drive, cpu, keyboard, monitor, sofa</p>
+                
+                <!-- Icon Picker Dropdown -->
+                <div x-show="showIconPicker" 
+                     x-transition
+                     class="glass-panel rounded-lg p-3 mt-2 max-h-48 overflow-y-auto"
+                     @click.away="showIconPicker = false">
+                    <div class="relative mb-2">
+                        <i data-lucide="search" class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500"></i>
+                        <input type="text" 
+                               x-model="iconSearch"
+                               placeholder="Search icons..."
+                               class="input pl-10 text-sm"
+                               @click.stop>
+                    </div>
+                    <div class="grid grid-cols-8 gap-1">
+                        <template x-for="icon in filteredIcons()" :key="icon">
+                            <button type="button"
+                                    @click="selectedIcon = icon; showIconPicker = false; setTimeout(() => { if(window.lucide) lucide.createIcons(); }, 50);"
+                                    class="aspect-square rounded flex items-center justify-center transition-all hover:bg-white/10"
+                                    :class="selectedIcon === icon ? 'bg-red-500/20 border border-red-500/30' : 'border border-transparent'">
+                                <i :data-lucide="icon" class="w-4 h-4" :class="selectedIcon === icon ? 'text-red-400' : 'text-slate-400'"></i>
+                            </button>
+                        </template>
+                    </div>
+                </div>
             </div>
 
             <!-- Type -->
             <div>
-                <label class="block text-sm font-medium text-white mb-2">Type</label>
-                <div class="flex gap-3">
-                    <label class="flex-1 cursor-pointer">
-                        <input type="radio" name="is_material" value="off" :checked="!isMaterial" @change="isMaterial = false" class="hidden">
-                        <div class="px-4 py-2.5 rounded-lg border text-center text-sm font-medium transition-all" :class="!isMaterial ? 'bg-slate-800 border-slate-700 text-white' : 'bg-slate-900/50 border-slate-800 text-slate-400'">
+                <label class="label">
+                    <i data-lucide="list-filter" class="w-4 h-4 inline mr-1"></i>
+                    Type
+                </label>
+                <div class="grid grid-cols-2 gap-3">
+                    <label class="cursor-pointer">
+                        <input type="radio" name="is_material" value="off" :checked="!isMaterial" @change="isMaterial = false" class="peer sr-only">
+                        <div class="p-3 rounded-lg border text-center text-sm font-medium transition-all peer-checked:bg-red-500/20 peer-checked:border-red-500/30 peer-checked:text-white bg-slate-800/50 border-slate-700 text-slate-400 hover:border-slate-600">
+                            <i data-lucide="zap" class="w-4 h-4 mx-auto mb-1"></i>
                             Consumable
                         </div>
                     </label>
-                    <label class="flex-1 cursor-pointer">
-                        <input type="radio" name="is_material" value="on" :checked="isMaterial" @change="isMaterial = true" class="hidden">
-                        <div class="px-4 py-2.5 rounded-lg border text-center text-sm font-medium transition-all" :class="isMaterial ? 'bg-slate-800 border-slate-700 text-white' : 'bg-slate-900/50 border-slate-800 text-slate-400'">
+                    <label class="cursor-pointer">
+                        <input type="radio" name="is_material" value="on" :checked="isMaterial" @change="isMaterial = true" class="peer sr-only">
+                        <div class="p-3 rounded-lg border text-center text-sm font-medium transition-all peer-checked:bg-red-500/20 peer-checked:border-red-500/30 peer-checked:text-white bg-slate-800/50 border-slate-700 text-slate-400 hover:border-slate-600">
+                            <i data-lucide="refresh-ccw" class="w-4 h-4 mx-auto mb-1"></i>
                             Equipment
                         </div>
                     </label>
                 </div>
-                <p class="text-xs text-slate-500 mt-1">Equipment must be returned; consumables are given out.</p>
+                <p class="text-xs text-slate-500 mt-2">Equipment must be returned; consumables are given out.</p>
             </div>
 
             <!-- Description -->
             <div>
-                <label for="description" class="block text-sm font-medium text-white mb-2">Description</label>
+                <label for="description" class="label">
+                    <i data-lucide="align-left" class="w-4 h-4 inline mr-1"></i>
+                    Description
+                </label>
                 <textarea name="description" id="description" rows="3" x-model="description"
-                          class="w-full px-4 py-2.5 rounded-lg bg-slate-900/50 border border-slate-800 text-white placeholder-slate-600 transition-all focus:outline-none focus:border-slate-700"
+                          class="textarea resize-none"
                           placeholder="Brief description of this category..."></textarea>
             </div>
 
             <!-- Submit Buttons -->
-            <div class="flex items-center justify-end gap-3 pt-6 border-t border-slate-800">
-                <a href="{% url 'categories' %}" up-follow
-                   class="px-5 py-2.5 rounded-lg border border-slate-800 text-slate-300 text-sm font-medium hover:border-slate-700 hover:bg-slate-900/50 transition-all">
-                    Cancel
-                </a>
-                <button type="submit"
-                        class="px-6 py-2.5 rounded-lg bg-primary-600 hover:bg-primary-700 text-white text-sm font-medium transition-all">
-                    {% if category %}Save Changes{% else %}Create Category{% endif %}
+            <div class="flex items-center justify-between pt-6 border-t border-white/10">
+                {% if category %}
+                <button type="button"
+                        @click="$refs.deleteForm.submit()"
+                        class="group inline-flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium text-rose-400 bg-rose-500/10 border border-rose-500/20 hover:bg-rose-500/20 hover:border-rose-500/40 hover:text-rose-300 transition-all duration-200 hover:-translate-y-0.5">
+                    <i data-lucide="trash-2" class="w-4 h-4 group-hover:scale-110 transition-transform"></i>
+                    <span>Delete Category</span>
                 </button>
+                {% else %}
+                <span></span>
+                {% endif %}
+                
+                <div class="flex items-center gap-3">
+                    <a href="{% url 'categories' %}"
+                       class="group inline-flex items-center gap-2 px-5 py-2.5 rounded-lg text-sm font-medium text-slate-400 bg-slate-800/50 border border-slate-700 hover:bg-slate-800 hover:border-slate-600 hover:text-slate-300 transition-all duration-200 hover:-translate-y-0.5">
+                        <i data-lucide="x" class="w-4 h-4 group-hover:rotate-90 transition-transform"></i>
+                        <span>Cancel</span>
+                    </a>
+                    <button type="submit"
+                            class="btn-primary">
+                        <i data-lucide="{% if category %}save{% else %}plus{% endif %}" class="w-4 h-4"></i>
+                        {% if category %}Save Changes{% else %}Create Category{% endif %}
+                    </button>
+                </div>
             </div>
         </form>
+
+        {% if category %}
+        <!-- Separate Delete Form (outside main form to avoid nesting) -->
+        <form x-ref="deleteForm" action="{% url 'category_delete' category.id %}" method="POST" class="hidden" onsubmit="return confirm('Are you sure you want to delete this category?');">
+            {% csrf_token %}
+        </form>
+        {% endif %}
     </div>
 </div>
 {% endblock %}
